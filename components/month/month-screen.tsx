@@ -8,6 +8,7 @@ import { LineRow } from '@/components/month/line-row'
 import { MonthSwitcher, switcherRange } from '@/components/month/month-switcher'
 import { NewLineRow } from '@/components/month/new-line-row'
 import { Headline } from '@/components/month/headline'
+import { WhatsComing } from '@/components/month/whats-coming'
 import {
   EditScopeDrawer,
   type PendingEdit,
@@ -15,11 +16,13 @@ import {
 import { ImpactBar } from '@/components/impact-bar'
 import { compareMonth, currentMonth, formatMonthLabel } from '@/lib/domain/month'
 import { formatINR } from '@/lib/domain/money'
+import { cadenceFromVersions } from '@/lib/domain/cadence'
 import {
   addCategory,
   clearOverride,
   renameCategory,
   setLineAmount,
+  setLineCadence,
   type EditScope,
 } from '@/lib/domain/mutations'
 import { useMonthView } from '@/lib/state/selectors'
@@ -110,6 +113,8 @@ export function MonthScreen() {
 
   function renderLine(line: ResolvedLine, groupKey: string) {
     const category = doc?.categories.find((c) => c.id === line.categoryId)
+    // Loan lines are derived from the loan, so they have no cadence to plan.
+    const templateLine = doc?.templateLines.find((l) => l.id === line.lineId)
     return (
       <LineRow
         key={line.lineId}
@@ -118,6 +123,14 @@ export function MonthScreen() {
         color={category?.color}
         icon={category?.icon}
         sliderMax={sliderMaxByGroup.get(groupKey) ?? 10_000_00}
+        cadence={templateLine ? cadenceFromVersions(templateLine.versions) : null}
+        startMonth={selectedMonth}
+        horizonMonths={doc?.settings.horizonMonths ?? 120}
+        onCadenceChange={(next) =>
+          apply((d) =>
+            setLineCadence(d, line.lineId, next, selectedMonth, line.amount, line.categoryName),
+          )
+        }
         onAmountChange={(amount) => handleAmountChange(line, amount)}
         onRename={(name) => apply((d) => renameCategory(d, line.categoryId, name))}
         onClearOverride={() =>
@@ -207,6 +220,10 @@ export function MonthScreen() {
             )}
           </GroupSection>
         ))}
+      </div>
+
+      <div className="mt-3">
+        <WhatsComing doc={doc} />
       </div>
 
       {frozen && (

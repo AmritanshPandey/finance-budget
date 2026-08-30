@@ -141,6 +141,11 @@ export interface OneOff {
   amount: Paise
   direction: 'in' | 'out'
   label: string
+  /**
+   * Money out that is being invested rather than spent — a bonus into ELSS, a
+   * PPF top-up. It still leaves the account, but it stays yours.
+   */
+  investIntoCategoryId?: string
 }
 
 /**

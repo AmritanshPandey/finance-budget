@@ -6,6 +6,7 @@
 
 import { LOAN_CATEGORY_PREFIX } from './constants'
 import { normaliseMerchant } from './actuals'
+import { cadenceToVersions, type Cadence } from './cadence'
 import { inferLook } from './look'
 import { addCategory as addCategoryToDoc } from './factory'
 import { newId } from './id'
@@ -93,6 +94,40 @@ export function clearOverride(
   return {
     ...doc,
     overrides: doc.overrides.filter((o) => !(o.month === month && o.lineId === lineId)),
+  }
+}
+
+/**
+ * Re-plan a line's future without touching its past.
+ *
+ * Versions that already started stay exactly as they are — history is not a
+ * draft. Everything from `fromMonth` onward is replaced by the new cadence,
+ * built on the amount the line actually resolves to in that month (which the
+ * caller already knows, so the resolution logic stays in one place).
+ */
+export function setLineCadence(
+  doc: BudgetDoc,
+  lineId: string,
+  cadence: Cadence,
+  fromMonth: ISOMonth,
+  baseAmount: Paise,
+  name: string,
+): BudgetDoc {
+  const line = doc.templateLines.find((l) => l.id === lineId)
+  if (!line) return doc
+
+  const history = line.versions.filter((v) => compareMonth(v.from, fromMonth) < 0)
+  const versions = [...history, ...cadenceToVersions(fromMonth, baseAmount, cadence, name)].sort(
+    (a, b) => compareMonth(a.from, b.from),
+  )
+
+  return {
+    ...doc,
+    templateLines: doc.templateLines.map((l) => (l.id === lineId ? { ...l, versions } : l)),
+    // A one-month override from here on would shadow the plan just described.
+    overrides: doc.overrides.filter(
+      (o) => o.lineId !== lineId || compareMonth(o.month, fromMonth) < 0,
+    ),
   }
 }
 

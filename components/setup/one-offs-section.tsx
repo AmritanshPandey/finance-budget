@@ -21,21 +21,32 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
   const [amount, setAmount] = useState<Paise>(0)
   const [month, setMonth] = useState<ISOMonth>(addMonths(currentMonth(), 1))
   const [direction, setDirection] = useState<'in' | 'out'>('in')
+  const [investInto, setInvestInto] = useState<string | null>(null)
 
   const oneOffs = [...doc.oneOffs].sort((a, b) => compareMonth(a.month, b.month))
+  const pots = doc.categories.filter((c) => c.kind === 'investment' && !c.archivedAt)
 
   function submit() {
     if (!label.trim() || amount <= 0) return
-    apply((d) => addOneOff(d, { label: label.trim(), amount, month, direction }))
+    apply((d) =>
+      addOneOff(d, {
+        label: label.trim(),
+        amount,
+        month,
+        direction,
+        investIntoCategoryId: direction === 'out' && investInto ? investInto : undefined,
+      }),
+    )
     setLabel('')
     setAmount(0)
+    setInvestInto(null)
     setAdding(false)
   }
 
   return (
     <Section
       title="One-off money"
-      caption="A bonus, a gift, a big bill. Lands in one month only."
+      caption="A bonus, a gift, a big bill, a lump sum invested. Lands in one month only."
       action={
         <Button size="sm" variant="outline" onClick={() => setAdding((a) => !a)}>
           <IconPlus className="size-4" />
@@ -54,7 +65,10 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
             ).map((option) => (
               <button
                 key={option.key}
-                onClick={() => setDirection(option.key)}
+                onClick={() => {
+                  setDirection(option.key)
+                  if (option.key === 'in') setInvestInto(null)
+                }}
                 className={cn(
                   'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                   direction === option.key ? 'bg-card shadow-sm' : 'text-muted-foreground',
@@ -78,6 +92,45 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
 
           <RupeeField label="How much" value={amount} onChange={setAmount} />
 
+          {/* Money can leave the account without leaving your net worth. */}
+          {direction === 'out' && pots.length > 0 && (
+            <div>
+              <p className="label-xs">Where it goes</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setInvestInto(null)}
+                  className={cn(
+                    'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                    investInto === null
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'text-muted-foreground hover:bg-accent',
+                  )}
+                >
+                  Spent
+                </button>
+                {pots.map((pot) => (
+                  <button
+                    key={pot.id}
+                    onClick={() => setInvestInto(pot.id)}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                      investInto === pot.id
+                        ? 'border-primary bg-primary/10 text-foreground'
+                        : 'text-muted-foreground hover:bg-accent',
+                    )}
+                  >
+                    Into {pot.name}
+                  </button>
+                ))}
+              </div>
+              {investInto && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Leaves your account but stays yours — it still counts as wealth.
+                </p>
+              )}
+            </div>
+          )}
+
           <label className="block">
             <span className="label-xs">When</span>
             <input
@@ -100,7 +153,14 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
         <ul className="space-y-1.5">
           {oneOffs.map((oneOff) => (
             <li key={oneOff.id} className="flex items-center gap-2 text-sm">
-              <span className="min-w-0 flex-1 truncate">{oneOff.label}</span>
+              <span className="min-w-0 flex-1 truncate">
+                {oneOff.label}
+                {oneOff.investIntoCategoryId && (
+                  <span className="block truncate text-xs text-muted-foreground">
+                    into {pots.find((p) => p.id === oneOff.investIntoCategoryId)?.name}
+                  </span>
+                )}
+              </span>
               <span className="text-xs text-muted-foreground">
                 {formatMonthLabel(oneOff.month)}
               </span>

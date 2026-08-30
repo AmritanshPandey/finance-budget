@@ -16,8 +16,10 @@ import {
   setCategoryDueDay,
   setCategoryKind,
   setCategoryLocked,
-  setLineGrowthRate,
+  setLineCadence,
 } from '@/lib/domain/mutations'
+import { CadenceControl } from '@/components/cadence-control'
+import { cadenceFromVersions } from '@/lib/domain/cadence'
 import { currentMonth } from '@/lib/domain/month'
 import { versionInForce } from '@/lib/domain/resolve-month'
 import { useBudget } from '@/lib/state/store'
@@ -124,13 +126,8 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
   const investing = category.kind === 'investment'
   const line = lineForCategory(doc, category.id)
   const active = line ? versionInForce(line.versions, currentMonth()) : null
-  const growthRate =
-    active?.growthRatePct ??
-    (category.kind === 'income'
-      ? doc.settings.incomeGrowthRatePct
-      : category.inflatable
-        ? doc.settings.inflationRatePct
-        : 0)
+  const cadence = line ? cadenceFromVersions(line.versions) : null
+  const baseAmount = active?.amount ?? 0
 
   return (
     <li className="rounded-lg border border-transparent px-0.5 py-1 hover:border-border">
@@ -183,23 +180,6 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
           </>
         )}
 
-        {/* The cadence chosen during onboarding stays editable here. */}
-        <label className="flex items-center gap-1 rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground">
-          <input
-            inputMode="decimal"
-            aria-label={`Yearly change for ${category.name}`}
-            value={growthRate}
-            disabled={!line}
-            onChange={(e) => {
-              const next = Number(e.target.value)
-              if (!Number.isFinite(next) || !line) return
-              apply((d) => setLineGrowthRate(d, line.id, currentMonth(), next))
-            }}
-            className="w-8 bg-transparent text-right tnum outline-none"
-          />
-          % a year
-        </label>
-
         {/* A due day is what puts a bill on the overview. */}
         {category.kind === 'expense' && (
           <label className="flex items-center gap-1 rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground">
@@ -237,6 +217,25 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
           </button>
         )}
       </div>
+
+      {/* The cadence chosen during onboarding stays editable, in full. */}
+      {line && cadence && (
+        <div className="mt-1.5 pl-1">
+          <CadenceControl
+            compact
+            cadence={cadence}
+            onChange={(next) =>
+              apply((d) =>
+                setLineCadence(d, line.id, next, currentMonth(), baseAmount, category.name),
+              )
+            }
+            currentAmount={baseAmount}
+            startMonth={currentMonth()}
+            horizonMonths={doc.settings.horizonMonths}
+            defaultGrowthPct={category.inflatable ? doc.settings.inflationRatePct : 0}
+          />
+        </div>
+      )}
     </li>
   )
 }

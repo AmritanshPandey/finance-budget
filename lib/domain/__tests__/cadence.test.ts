@@ -39,6 +39,36 @@ describe('cadence to versions', () => {
   })
 })
 
+describe('ending a line', () => {
+  it('runs through the end month and stops the month after', () => {
+    const versions = cadenceToVersions(
+      '2026-08',
+      toPaise(7_500),
+      { mode: 'ends', after: '2027-12' },
+      'Subscriptions',
+    )
+    const doc = setLineVersionsByName(plainDoc('2026-08'), 'Subscriptions', versions)
+    const amountIn = (month: string) =>
+      resolveMonth(doc, month).lines.find((l) => l.categoryName === 'Subscriptions')?.amount
+    expect(amountIn('2027-12')).toBe(toPaise(7_500))
+    expect(amountIn('2028-01')).toBe(0)
+  })
+
+  it('reads back as an end date rather than a change to zero', () => {
+    const versions = cadenceToVersions(
+      '2026-08',
+      toPaise(7_500),
+      { mode: 'ends', after: '2027-12' },
+      'Subscriptions',
+    )
+    expect(cadenceFromVersions(versions)).toEqual({ mode: 'ends', after: '2027-12' })
+  })
+
+  it('says so in plain language', () => {
+    expect(describeCadence({ mode: 'ends', after: '2027-12' })).toBe('Stops after Dec 2027')
+  })
+})
+
 describe('a cadence drives the actual forecast', () => {
   it('a dated change takes effect in its month and not before', () => {
     const doc = setLineVersionsByName(

@@ -122,6 +122,17 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
     let expenses = resolved.expenses + resolved.emis
     let contributedAvailable = 0
     let contributedLocked = 0
+    let lumpAvailable = 0
+    let lumpLocked = 0
+
+    // A planned lump sum into an investment leaves cash but joins a pot.
+    for (const oneOff of oneOffs) {
+      if (oneOff.direction !== 'out' || !oneOff.investIntoCategoryId) continue
+      const category = doc.categories.find((c) => c.id === oneOff.investIntoCategoryId)
+      if (!category || category.kind !== 'investment') continue
+      if (category.locked) lumpLocked += oneOff.amount
+      else lumpAvailable += oneOff.amount
+    }
 
     if (actual) {
       // Income falls back to the plan unless income was logged too — otherwise
@@ -143,8 +154,8 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
     const openingBalance = balance
     balance += surplus
 
-    investedAvailable += contributedAvailable
-    investedLocked += contributedLocked
+    investedAvailable += contributedAvailable + lumpAvailable
+    investedLocked += contributedLocked + lumpLocked
 
     // Returns accrue on money you actually have.
     const cashReturns = balance > 0 ? scale(balance, monthlyReturn) : 0
@@ -189,7 +200,7 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
       income,
       expenses: actual ? actual.spent : resolved.expenses,
       emis: actual ? 0 : resolved.emis,
-      investments: contributedAvailable + contributedLocked,
+      investments: contributedAvailable + contributedLocked + lumpAvailable + lumpLocked,
       surplus,
       openingBalance,
       closingBalance: balance,

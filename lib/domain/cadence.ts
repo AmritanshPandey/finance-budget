@@ -7,7 +7,7 @@
  * already understands, so a cadence is just a nicer way to describe one.
  */
 
-import { formatMonthLabel } from './month'
+import { addMonths, compareMonth, formatMonthLabel } from './month'
 import { formatINR } from './money'
 import type { ISOMonth, Paise, TemplateLineVersion } from './types'
 
@@ -15,6 +15,8 @@ export type Cadence =
   | { mode: 'flat' }
   | { mode: 'grows'; ratePct: number }
   | { mode: 'changes'; from: ISOMonth; amount: Paise }
+  /** Runs as it is up to and including `after`, then stops entirely. */
+  | { mode: 'ends'; after: ISOMonth }
 
 export function cadenceToVersions(
   startMonth: ISOMonth,
@@ -24,6 +26,19 @@ export function cadenceToVersions(
 ): TemplateLineVersion[] {
   if (cadence.mode === 'grows') {
     return [{ from: startMonth, amount, growthRatePct: cadence.ratePct }]
+  }
+
+  if (cadence.mode === 'ends') {
+    return [
+      { from: startMonth, amount, growthRatePct: 0 },
+      // Zero from the month after the last one it runs.
+      {
+        from: addMonths(cadence.after, 1),
+        amount: 0,
+        growthRatePct: 0,
+        label: `${name} ends`,
+      },
+    ]
   }
 
   if (cadence.mode === 'changes') {
@@ -51,6 +66,8 @@ export function describeCadence(cadence: Cadence): string {
         : `Climbs ${cadence.ratePct}% a year`
     case 'changes':
       return `Becomes ${formatINR(cadence.amount)} in ${formatMonthLabel(cadence.from)}`
+    case 'ends':
+      return `Stops after ${formatMonthLabel(cadence.after)}`
     default:
       return 'Same every month'
   }
@@ -58,10 +75,15 @@ export function describeCadence(cadence: Cadence): string {
 
 /** Reads a cadence back off an existing line, for editing. */
 export function cadenceFromVersions(versions: TemplateLineVersion[]): Cadence {
-  if (versions.length > 1) {
-    const later = versions[versions.length - 1]
+  const sorted = [...versions].sort((a, b) => compareMonth(a.from, b.from))
+
+  if (sorted.length > 1) {
+    const later = sorted[sorted.length - 1]
+    // A trailing zero is how "it stops" is stored.
+    if (later.amount === 0) return { mode: 'ends', after: addMonths(later.from, -1) }
     return { mode: 'changes', from: later.from, amount: later.amount }
   }
-  const rate = versions[0]?.growthRatePct ?? 0
+
+  const rate = sorted[0]?.growthRatePct ?? 0
   return rate === 0 ? { mode: 'flat' } : { mode: 'grows', ratePct: rate }
 }
