@@ -4,6 +4,7 @@ import { AssumptionsSection } from '@/components/setup/assumptions-section'
 import { BalanceCheckSection } from '@/components/setup/balance-check-section'
 import { CategoriesSection } from '@/components/setup/categories-section'
 import { DataSection } from '@/components/setup/data-section'
+import { InstallSection } from '@/components/setup/install-section'
 import { LoansSection } from '@/components/setup/loans-section'
 import { OneOffsSection } from '@/components/setup/one-offs-section'
 import { useBudget } from '@/lib/state/store'
@@ -27,6 +28,7 @@ export function SetupScreen() {
       <AssumptionsSection doc={doc} />
       <CategoriesSection doc={doc} />
       <DataSection />
+      <InstallSection />
     </div>
   )
 }
