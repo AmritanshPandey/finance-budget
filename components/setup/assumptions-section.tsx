@@ -15,7 +15,7 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
   return (
     <Section
       title="Assumptions"
-      caption="The few numbers the forecast leans on. Rough is fine."
+      caption="The few numbers the forecast leans on. All optional."
     >
       <div className="space-y-6">
         <div>
@@ -58,16 +58,24 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
           }
         />
 
+        <div className="rounded-2xl border border-dashed p-3">
+          <p className="text-xs text-muted-foreground">
+            These are all <span className="text-foreground">off unless you set them</span>. Nothing
+            in your plan goes up on its own — set a rate here to apply it across the board, or give
+            a single line its own on the Budget screen.
+          </p>
+        </div>
+
         <PercentField
           label="Prices rise by"
-          hint="Applied each year to everyday spending like food and transport."
+          hint="Applied each year to everyday spending. Zero means today's prices, forever."
           value={settings.inflationRatePct}
           onChange={(inflationRatePct) => apply((d) => updateSettings(d, { inflationRatePct }))}
         />
 
         <PercentField
           label="Pay rises by"
-          hint="Applied to income each year. Set it to 0 to assume no raises."
+          hint="Applied to income each year. Zero assumes no raises."
           value={settings.incomeGrowthRatePct}
           onChange={(incomeGrowthRatePct) =>
             apply((d) => updateSettings(d, { incomeGrowthRatePct }))
@@ -76,7 +84,7 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
 
         <PercentField
           label="Savings grow by"
-          hint="One number for everything you hold. Not a portfolio."
+          hint="One number for everything you hold. Zero ignores returns entirely."
           value={settings.expectedAnnualReturnPct}
           onChange={(expectedAnnualReturnPct) =>
             apply((d) => updateSettings(d, { expectedAnnualReturnPct }))

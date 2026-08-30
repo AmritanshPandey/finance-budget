@@ -8,10 +8,35 @@
 
 import { DEFAULT_SETTINGS } from './factory'
 import { inferLook } from './look'
-import type { BudgetDoc } from './types'
+import { CURRENT_VERSION, type BudgetDoc } from './types'
+
+/**
+ * Version 1 applied yearly increases by default — 6% to most spending, 8% to
+ * rent, 5% to pay, 6% to savings — which meant a plan quietly grew without
+ * anyone asking it to. Version 2 turns all of that off.
+ *
+ * A rate the user has set deliberately since is left alone; this only runs once,
+ * on documents written before the change.
+ */
+function stopAutomaticIncreases(doc: BudgetDoc): BudgetDoc {
+  return {
+    ...doc,
+    settings: {
+      ...doc.settings,
+      inflationRatePct: 0,
+      incomeGrowthRatePct: 0,
+      expectedAnnualReturnPct: 0,
+    },
+    templateLines: doc.templateLines.map((line) => ({
+      ...line,
+      // Dated changes are deliberate and stay; it is only the rates that go.
+      versions: line.versions.map((v) => ({ ...v, growthRatePct: 0 })),
+    })),
+  }
+}
 
 export function migrate(stored: BudgetDoc): BudgetDoc {
-  return {
+  const filled: BudgetDoc = {
     ...stored,
     settings: { ...DEFAULT_SETTINGS, ...stored.settings },
     groups: stored.groups ?? [],
@@ -29,4 +54,7 @@ export function migrate(stored: BudgetDoc): BudgetDoc {
     transactions: stored.transactions ?? [],
     merchantMemory: stored.merchantMemory ?? {},
   }
+
+  const upgraded = (stored.version ?? 1) < 2 ? stopAutomaticIncreases(filled) : filled
+  return { ...upgraded, version: CURRENT_VERSION }
 }

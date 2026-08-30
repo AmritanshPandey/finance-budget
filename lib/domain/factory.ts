@@ -8,6 +8,7 @@ import { newId } from './id'
 import { inferLook } from './look'
 import { currentMonth } from './month'
 import { toPaise } from './money'
+import { CURRENT_VERSION } from './types'
 import type {
   BudgetDoc,
   Category,
@@ -23,9 +24,11 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'startMonth'> = {
   startingBalance: 0,
   monthlySavingTarget: 0,
   safetyFloor: { mode: 'monthsOfExpenses', months: 3 },
-  inflationRatePct: 6,
-  incomeGrowthRatePct: 5,
-  expectedAnnualReturnPct: 6,
+  // All zero on purpose. An amount only moves when the user says it moves —
+  // a forecast that quietly inflates itself is one nobody can check.
+  inflationRatePct: 0,
+  incomeGrowthRatePct: 0,
+  expectedAnnualReturnPct: 0,
   horizonMonths: 120,
   defaultViewMonths: 60,
 }
@@ -39,10 +42,11 @@ export interface SeedCategory {
   group: string
   step: SeedStep
   inflatable: boolean
-  /** Starting cadence: 0 holds steady, a number climbs that much each year. */
+  /**
+   * What the cadence control prefills if the user chooses "climbs yearly".
+   * Zero means the line holds steady, which is the default for everything.
+   */
   defaultGrowthPct: number
-  /** Rent rises faster than general inflation in most Indian cities. */
-  growthRatePct?: number
   /** Investments only: goals may never draw on this. */
   locked?: boolean
   /** Starting amount, in rupees. */
@@ -59,22 +63,22 @@ export const SEED_GROUPS = [
 ] as const
 
 export const SEED_CATEGORIES: SeedCategory[] = [
-  { name: 'Salary', kind: 'income', group: 'Income', step: 'income', inflatable: false, defaultGrowthPct: 5 },
+  { name: 'Salary', kind: 'income', group: 'Income', step: 'income', inflatable: false, defaultGrowthPct: 0 },
 
-  { name: 'Rent', kind: 'expense', group: 'Home', step: 'home', inflatable: false, growthRatePct: 8, defaultGrowthPct: 8, rupees: 30_000 },
-  { name: 'Maintenance, electricity and gas', kind: 'expense', group: 'Home', step: 'home', inflatable: true, defaultGrowthPct: 6, rupees: 10_000 },
-  { name: 'House help', kind: 'expense', group: 'Home', step: 'home', inflatable: true, defaultGrowthPct: 6, rupees: 8_500 },
+  { name: 'Rent', kind: 'expense', group: 'Home', step: 'home', inflatable: false, defaultGrowthPct: 0, rupees: 30_000 },
+  { name: 'Maintenance, electricity and gas', kind: 'expense', group: 'Home', step: 'home', inflatable: true, defaultGrowthPct: 0, rupees: 10_000 },
+  { name: 'House help', kind: 'expense', group: 'Home', step: 'home', inflatable: true, defaultGrowthPct: 0, rupees: 8_500 },
 
   { name: 'Subscriptions', kind: 'expense', group: 'Lifestyle', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 7_500 },
   { name: 'Life insurance', kind: 'expense', group: 'Family & cover', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 1_100 },
   { name: "Mom's pocket money", kind: 'expense', group: 'Family & cover', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 2_500 },
   { name: 'Car parking', kind: 'expense', group: 'Daily', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 1_500 },
 
-  { name: 'Groceries', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 11_000 },
-  { name: 'Commute', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 5_000 },
-  { name: 'Personal care and protein', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 5_000 },
-  { name: 'Going out', kind: 'expense', group: 'Lifestyle', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 2_500 },
-  { name: 'Credit card', kind: 'expense', group: 'Lifestyle', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 13_500 },
+  { name: 'Groceries', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 0, rupees: 11_000 },
+  { name: 'Commute', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 0, rupees: 5_000 },
+  { name: 'Personal care and protein', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 0, rupees: 5_000 },
+  { name: 'Going out', kind: 'expense', group: 'Lifestyle', step: 'living', inflatable: true, defaultGrowthPct: 0, rupees: 2_500 },
+  { name: 'Credit card', kind: 'expense', group: 'Lifestyle', step: 'living', inflatable: true, defaultGrowthPct: 0, rupees: 13_500 },
 
   // Investing is not spending. These leave the account and accumulate.
   { name: 'ELSS', kind: 'investment', group: 'Investments', step: 'investments', inflatable: false, defaultGrowthPct: 0, rupees: 5_000 },
@@ -111,13 +115,12 @@ export function createEmptyDoc(startMonth: ISOMonth = currentMonth()): BudgetDoc
       {
         from: startMonth,
         amount: toPaise(SEED_CATEGORIES[index].rupees ?? 0),
-        growthRatePct: SEED_CATEGORIES[index].growthRatePct,
       },
     ],
   }))
 
   return {
-    version: 1,
+    version: CURRENT_VERSION,
     settings: { ...DEFAULT_SETTINGS, startMonth },
     groups,
     categories,

@@ -145,3 +145,77 @@ describe('a lump sum into an investment', () => {
     expect(month.investedAvailable).toBe(0)
   })
 })
+
+describe('turning off automatic increases (v1 → v2)', () => {
+  it('flattens the yearly rates a version-1 document was given by default', async () => {
+    const { migrate } = await import('../migrate')
+    const base = plainDoc(NOW)
+    const legacy: BudgetDoc = {
+      ...base,
+      version: 1,
+      settings: {
+        ...base.settings,
+        inflationRatePct: 6,
+        incomeGrowthRatePct: 5,
+        expectedAnnualReturnPct: 6,
+      },
+      templateLines: base.templateLines.map((l) => ({
+        ...l,
+        versions: l.versions.map((v) => ({ ...v, growthRatePct: 8 })),
+      })),
+    }
+
+    const migrated = migrate(legacy)
+    expect(migrated.version).toBe(2)
+    expect(migrated.settings.inflationRatePct).toBe(0)
+    expect(migrated.settings.incomeGrowthRatePct).toBe(0)
+    expect(migrated.settings.expectedAnnualReturnPct).toBe(0)
+    expect(
+      migrated.templateLines.every((l) => l.versions.every((v) => v.growthRatePct === 0)),
+    ).toBe(true)
+  })
+
+  it('keeps dated changes, which were deliberate', async () => {
+    const { migrate } = await import('../migrate')
+    const base = plainDoc(NOW)
+    const withChange = setLineVersionsByName(
+      base,
+      'Rent',
+      cadenceToVersions(NOW, toPaise(30_000), { mode: 'changes', from: '2027-04', amount: toPaise(38_000) }, 'Rent'),
+    )
+    const migrated = migrate({ ...withChange, version: 1 })
+    const rent = migrated.templateLines.find(
+      (l) => l.categoryId === migrated.categories.find((c) => c.name === 'Rent')!.id,
+    )!
+    expect(rent.versions).toHaveLength(2)
+    expect(rent.versions[1].amount).toBe(toPaise(38_000))
+    expect(rent.versions[1].from).toBe('2027-04')
+  })
+
+  it('leaves a rate the user set after upgrading alone', async () => {
+    const { migrate } = await import('../migrate')
+    const base = plainDoc(NOW)
+    const deliberate: BudgetDoc = {
+      ...base,
+      version: 2,
+      templateLines: base.templateLines.map((l) => ({
+        ...l,
+        versions: l.versions.map((v) => ({ ...v, growthRatePct: 8 })),
+      })),
+    }
+    const migrated = migrate(deliberate)
+    expect(migrated.templateLines[0].versions[0].growthRatePct).toBe(8)
+  })
+
+  it('a fresh budget holds every amount steady', () => {
+    const doc = plainDoc(NOW)
+    expect(doc.settings.inflationRatePct).toBe(0)
+    expect(doc.settings.incomeGrowthRatePct).toBe(0)
+    expect(doc.settings.expectedAnnualReturnPct).toBe(0)
+
+    const p = project(doc, { now: NOW })
+    // Ten years on, income and outgoings are exactly what they are today.
+    expect(p.months[119].income).toBe(p.months[0].income)
+    expect(p.months[119].expenses).toBe(p.months[0].expenses)
+  })
+})

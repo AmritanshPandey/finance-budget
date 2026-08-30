@@ -359,7 +359,7 @@ export function OnboardingFlow() {
     {
       name: 'Home',
       title: 'Home and bills',
-      caption: 'Rent usually climbs. The others move with prices.',
+      caption: 'Amounts stay put unless you tell one to climb or change.',
       canAdvance: true,
       body: (
         <div className="space-y-6">
@@ -457,7 +457,7 @@ export function OnboardingFlow() {
     {
       name: 'Fixed',
       title: 'Fixed monthly commitments',
-      caption: 'Things that stay put until you change them.',
+      caption: 'The ones that do not move month to month.',
       canAdvance: true,
       body: (
         <div className="space-y-6">
@@ -469,7 +469,7 @@ export function OnboardingFlow() {
     {
       name: 'Living',
       title: 'Everyday spending',
-      caption: 'These drift up with prices unless you say otherwise.',
+      caption: 'What you spend in a normal month.',
       canAdvance: true,
       body: (
         <div className="space-y-6">

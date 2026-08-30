@@ -196,8 +196,14 @@ export interface Settings {
 // The whole document
 // ---------------------------------------------------------------------------
 
+/**
+ * 1 → 2 turned off the automatic yearly increases that used to be applied by
+ * default. See migrate().
+ */
+export const CURRENT_VERSION = 2
+
 export interface BudgetDoc {
-  version: 1
+  version: number
   settings: Settings
   groups: CategoryGroup[]
   categories: Category[]
