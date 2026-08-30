@@ -5,6 +5,8 @@
  */
 
 import { LOAN_CATEGORY_PREFIX } from './constants'
+import { normaliseMerchant } from './actuals'
+import { inferLook } from './look'
 import { addCategory as addCategoryToDoc } from './factory'
 import { newId } from './id'
 import { compareMonth } from './month'
@@ -23,6 +25,7 @@ import type {
   Paise,
   Settings,
   TemplateLine,
+  Transaction,
 } from './types'
 
 export type EditScope = 'month' | 'future'
@@ -132,10 +135,42 @@ export function addCategory(
   return addCategoryToDoc(doc, input)
 }
 
+/**
+ * Renaming re-dresses the line, unless the user picked a look by hand — typing
+ * "Groceries" over "Other" should visibly become groceries.
+ */
 export function renameCategory(doc: BudgetDoc, categoryId: string, name: string): BudgetDoc {
   return {
     ...doc,
-    categories: doc.categories.map((c) => (c.id === categoryId ? { ...c, name } : c)),
+    categories: doc.categories.map((c) => {
+      if (c.id !== categoryId) return c
+      const previous = inferLook(c.name)
+      const chosenByHand = c.icon !== previous.icon || c.color !== previous.color
+      return chosenByHand ? { ...c, name } : { ...c, name, ...inferLook(name) }
+    }),
+  }
+}
+
+/** An explicit override from the icon/colour picker. */
+export function setCategoryLook(
+  doc: BudgetDoc,
+  categoryId: string,
+  look: { icon?: string; color?: string },
+): BudgetDoc {
+  return {
+    ...doc,
+    categories: doc.categories.map((c) => (c.id === categoryId ? { ...c, ...look } : c)),
+  }
+}
+
+export function setCategoryDueDay(
+  doc: BudgetDoc,
+  categoryId: string,
+  dueDay: number | undefined,
+): BudgetDoc {
+  return {
+    ...doc,
+    categories: doc.categories.map((c) => (c.id === categoryId ? { ...c, dueDay } : c)),
   }
 }
 
@@ -326,6 +361,36 @@ export function addOneOff(doc: BudgetDoc, oneOff: Omit<OneOff, 'id'>): BudgetDoc
 
 export function removeOneOff(doc: BudgetDoc, oneOffId: string): BudgetDoc {
   return { ...doc, oneOffs: doc.oneOffs.filter((o) => o.id !== oneOffId) }
+}
+
+/** Logging a transaction also teaches the app what that merchant means. */
+export function addTransaction(
+  doc: BudgetDoc,
+  tx: Omit<Transaction, 'id'>,
+): BudgetDoc {
+  const entry: Transaction = { ...tx, id: newId('tx') }
+  const merchantMemory = { ...doc.merchantMemory }
+  if (tx.merchant?.trim()) {
+    merchantMemory[normaliseMerchant(tx.merchant)] = tx.categoryId
+  }
+  return { ...doc, transactions: [...doc.transactions, entry], merchantMemory }
+}
+
+export function updateTransaction(
+  doc: BudgetDoc,
+  txId: string,
+  patch: Partial<Transaction>,
+): BudgetDoc {
+  return {
+    ...doc,
+    transactions: doc.transactions.map((t) =>
+      t.id === txId ? { ...t, ...patch, id: t.id } : t,
+    ),
+  }
+}
+
+export function removeTransaction(doc: BudgetDoc, txId: string): BudgetDoc {
+  return { ...doc, transactions: doc.transactions.filter((t) => t.id !== txId) }
 }
 
 export function recordBalanceCheck(

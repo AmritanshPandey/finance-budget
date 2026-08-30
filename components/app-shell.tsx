@@ -3,15 +3,23 @@
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarDays, LineChart, Settings2 } from 'lucide-react'
+import {
+  IconChartPie,
+  IconLayoutGrid,
+  IconSettings,
+  IconTarget,
+  IconWallet,
+} from '@tabler/icons-react'
 
 import { useBudget } from '@/lib/state/store'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/', label: 'Month', icon: CalendarDays },
-  { href: '/future', label: 'Future', icon: LineChart },
-  { href: '/setup', label: 'Setup', icon: Settings2 },
+  { href: '/', label: 'Overview', icon: IconLayoutGrid },
+  { href: '/budget', label: 'Budget', icon: IconWallet },
+  { href: '/analytics', label: 'Analytics', icon: IconChartPie },
+  { href: '/goals', label: 'Goals', icon: IconTarget },
+  { href: '/setup', label: 'Setup', icon: IconSettings },
 ] as const
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -36,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!hydrated || !doc) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted border-t-primary" />
+        <div className="size-5 animate-spin rounded-full border-2 border-muted border-t-primary" />
         <span className="sr-only">Loading your budget</span>
       </div>
     )
@@ -61,7 +69,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
     <nav className="hidden w-56 shrink-0 border-r bg-card/40 p-4 md:block">
       <div className="mb-8 px-2 pt-2">
         <p className="text-sm font-semibold tracking-tight">Budget</p>
-        <p className="text-xs text-muted-foreground">Plan, not bookkeeping</p>
+        <p className="text-xs text-muted-foreground">Plan and track</p>
       </div>
       <ul className="space-y-1">
         {NAV.map(({ href, label, icon: Icon }) => {
@@ -71,13 +79,13 @@ function SidebarNav({ pathname }: { pathname: string }) {
               <Link
                 href={href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
                   active
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                 )}
               >
-                <Icon className="size-4" strokeWidth={2} />
+                <Icon size={18} stroke={2} />
                 {label}
               </Link>
             </li>
@@ -88,11 +96,11 @@ function SidebarNav({ pathname }: { pathname: string }) {
   )
 }
 
-/** Phone: thumb-reachable tabs, below the sticky impact bar. */
+/** Phone: thumb-reachable tabs, active one carried in a lime disc. */
 function TabBar({ pathname }: { pathname: string }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-safe backdrop-blur md:hidden">
-      <ul className="mx-auto flex max-w-md">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 pb-safe backdrop-blur-xl md:hidden">
+      <ul className="mx-auto flex max-w-md px-1">
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href)
           return (
@@ -100,13 +108,24 @@ function TabBar({ pathname }: { pathname: string }) {
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex flex-col items-center gap-1 py-2.5 text-[0.6875rem] font-medium transition-colors',
-                  active ? 'text-primary' : 'text-muted-foreground',
-                )}
+                className="flex flex-col items-center gap-1 py-2"
               >
-                <Icon className="size-5" strokeWidth={active ? 2.4 : 2} />
-                {label}
+                <span
+                  className={cn(
+                    'flex size-9 items-center justify-center rounded-full transition-colors',
+                    active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  <Icon size={20} stroke={2} />
+                </span>
+                <span
+                  className={cn(
+                    'text-[0.625rem] font-medium leading-none',
+                    active ? 'text-primary' : 'text-muted-foreground',
+                  )}
+                >
+                  {label}
+                </span>
               </Link>
             </li>
           )

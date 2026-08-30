@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { IconPlus, IconX } from '@tabler/icons-react'
 
 import { RupeeField } from '@/components/rupee-field'
 import { Section } from '@/components/setup/section'
@@ -38,7 +38,7 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
       caption="A bonus, a gift, a big bill. Lands in one month only."
       action={
         <Button size="sm" variant="outline" onClick={() => setAdding((a) => !a)}>
-          <Plus className="size-4" />
+          <IconPlus className="size-4" />
           Add
         </Button>
       }
@@ -118,7 +118,7 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
                 aria-label={`Remove ${oneOff.label}`}
                 className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               >
-                <X className="size-3.5" />
+                <IconX className="size-3.5" />
               </button>
             </li>
           ))}

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { IconArrowRight, IconSparkles } from '@tabler/icons-react'
 
 import { summariseOutcomes } from '@/lib/domain/goals'
 import { useBudget } from '@/lib/state/store'
@@ -39,12 +39,12 @@ export function ImpactBar() {
           tone === 'neutral' && 'bg-card/90 text-muted-foreground',
         )}
       >
-        <Sparkles className="size-4 shrink-0 self-start mt-0.5" strokeWidth={2.2} />
+        <IconSparkles className="size-4 shrink-0 self-start mt-0.5" stroke={2.2} />
         {/* Never truncated: this sentence is the point of the app. */}
         <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-balance">
           {message}
         </span>
-        <ArrowRight className="size-4 shrink-0 self-center opacity-60" strokeWidth={2.2} />
+        <IconArrowRight className="size-4 shrink-0 self-center opacity-60" stroke={2.2} />
       </Link>
     </div>
   )

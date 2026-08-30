@@ -2,9 +2,9 @@
 
 import { create } from 'zustand'
 
-import { DEFAULT_SETTINGS } from '@/lib/domain/factory'
 import { freezePastMonths } from '@/lib/domain/freeze'
 import { describeImpact, type Impact } from '@/lib/domain/goals'
+import { migrate } from '@/lib/domain/migrate'
 import { currentMonth } from '@/lib/domain/month'
 import { project } from '@/lib/domain/projection'
 import type { BudgetDoc, Projection } from '@/lib/domain/types'
@@ -44,12 +44,12 @@ export const useBudget = create<BudgetStore>((set, get) => ({
       set({ hydrated: true })
       return
     }
-    // Fill in any setting added since this document was written, then write
-    // down every month that has fallen into the past.
+    // Bring the document up to the current shape, then write down every month
+    // that has fallen into the past.
+    const migrated = migrate(stored)
     const doc: BudgetDoc = {
-      ...stored,
-      settings: { ...DEFAULT_SETTINGS, ...stored.settings },
-      snapshots: freezePastMonths(stored, currentMonth()),
+      ...migrated,
+      snapshots: freezePastMonths(migrated, currentMonth()),
     }
     set({ doc, projection: project(doc), hydrated: true })
     persist(doc)
@@ -84,7 +84,8 @@ export const useBudget = create<BudgetStore>((set, get) => ({
       if (!parsed || parsed.version !== 1 || !parsed.settings) {
         return { ok: false, error: 'That file is not a budget export.' }
       }
-      get().initialize(parsed)
+      // An export can be older than the code importing it.
+      get().initialize(migrate(parsed))
       return { ok: true }
     } catch {
       return { ok: false, error: 'That file could not be read.' }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, TriangleAlert } from 'lucide-react'
+import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react'
 
 import { buildRows, type TimelineRow } from '@/components/future/timeline-rows'
 import { describeOutcome } from '@/lib/domain/goals'
@@ -22,7 +22,7 @@ function rangesFor(horizonMonths: number) {
   }))
 }
 
-export function FutureScreen() {
+export function FutureScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const projection = useBudget((s) => s.projection)
   const horizonMonths = useBudget((s) => s.doc?.settings.horizonMonths ?? 120)
   const rangeMonths = useUi((s) => s.rangeMonths)
@@ -47,10 +47,17 @@ export function FutureScreen() {
   const unreachable = projection.goalOutcomes.filter((o) => o.status === 'unreachable')
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-28 pt-safe">
-      <header className="sticky top-0 z-20 -mx-4 flex items-center justify-between gap-3 bg-background/95 px-4 pb-3 pt-4 backdrop-blur">
+    <div className={cn(!embedded && 'mx-auto max-w-2xl px-4 pb-28 pt-safe')}>
+      <header
+        className={cn(
+          'flex items-center justify-between gap-3 bg-background/95 pb-3 backdrop-blur',
+          !embedded && 'sticky top-0 z-20 -mx-4 px-4 pt-4',
+        )}
+      >
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Future</h1>
+          <h2 className="text-base font-semibold tracking-tight">
+            {embedded ? 'What happens next' : 'Future'}
+          </h2>
           <p className="text-xs text-muted-foreground">Scroll down to go forward</p>
         </div>
         <div className="flex rounded-lg bg-muted p-0.5">
@@ -80,7 +87,7 @@ export function FutureScreen() {
       {unreachable.length > 0 && (
         <section className="mt-6 rounded-xl border border-negative/30 bg-negative-soft/50 p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-negative">
-            <TriangleAlert className="size-4" strokeWidth={2.2} />
+            <IconAlertTriangle className="size-4" stroke={2.2} />
             Out of reach
           </h2>
           <ul className="mt-2 space-y-1.5">
@@ -170,7 +177,7 @@ function QuietBand({
           {row.months.length} quiet months · {growth >= 0 ? 'grows' : 'falls'}{' '}
           <span className="tnum">{formatCompactINR(Math.abs(growth))}</span>
         </span>
-        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+        <IconChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
       </button>
     </li>
   )

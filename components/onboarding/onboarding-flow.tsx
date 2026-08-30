@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Lock, LockOpen, Plus, X } from 'lucide-react'
+import { IconArrowLeft, IconArrowRight, IconLock, IconLockOpen, IconPlus, IconX } from '@tabler/icons-react'
 
 import { CadenceField } from '@/components/onboarding/cadence-field'
 import { RupeeField } from '@/components/rupee-field'
@@ -225,7 +225,7 @@ export function OnboardingFlow() {
                     : 'text-muted-foreground hover:bg-accent',
                 )}
               >
-                {locked[seed.name] ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
+                {locked[seed.name] ? <IconLock className="size-3" /> : <IconLockOpen className="size-3" />}
                 {locked[seed.name] ? 'Locked away — goals can’t use it' : 'Goals can use it'}
               </button>
             )}
@@ -254,7 +254,7 @@ export function OnboardingFlow() {
                   aria-label="Remove this line"
                   className="rounded-md p-1 text-muted-foreground hover:bg-accent"
                 >
-                  <X className="size-3.5" />
+                  <IconX className="size-3.5" />
                 </button>
               </div>
               <div className="mt-4">
@@ -285,7 +285,7 @@ export function OnboardingFlow() {
           onClick={() => addExtra(target, target === 'investments' ? 'investment' : target === 'income' ? 'income' : 'expense')}
           className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
-          <Plus className="size-4" />
+          <IconPlus className="size-4" />
           Add another
         </button>
       </div>
@@ -395,7 +395,7 @@ export function OnboardingFlow() {
                     aria-label={`Remove ${loan.name}`}
                     className="rounded-md p-1 text-muted-foreground hover:bg-accent"
                   >
-                    <X className="size-3.5" />
+                    <IconX className="size-3.5" />
                   </button>
                 )}
               </div>
@@ -447,7 +447,7 @@ export function OnboardingFlow() {
             }
             className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <Plus className="size-4" />
+            <IconPlus className="size-4" />
             Add another loan
           </button>
           {runningTotal}
@@ -614,7 +614,7 @@ export function OnboardingFlow() {
       <div className="sticky bottom-0 flex items-center gap-3 bg-background pb-2 pt-8">
         {step > 0 && (
           <Button variant="ghost" size="lg" onClick={() => setStep((s) => s - 1)}>
-            <ArrowLeft className="size-4" />
+            <IconArrowLeft className="size-4" />
             Back
           </Button>
         )}
@@ -625,7 +625,7 @@ export function OnboardingFlow() {
           onClick={() => (last ? finish() : setStep((s) => s + 1))}
         >
           {last ? 'Start planning' : 'Next'}
-          {!last && <ArrowRight className="size-4" />}
+          {!last && <IconArrowRight className="size-4" />}
         </Button>
       </div>
     </div>

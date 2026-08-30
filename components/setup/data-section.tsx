@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Download, Moon, Sun, Trash2, Upload } from 'lucide-react'
+import { IconDownload, IconTrash, IconUpload } from '@tabler/icons-react'
 import { toast } from 'sonner'
 
 import { Section } from '@/components/setup/section'
@@ -50,21 +50,20 @@ export function DataSection() {
     >
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={download}>
-          <Download className="size-4" />
+          <IconDownload className="size-4" />
           Export
         </Button>
         <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-          <Upload className="size-4" />
+          <IconUpload className="size-4" />
           Import
         </Button>
-        <ThemeToggle />
         <Button
           variant="ghost"
           size="sm"
           className="text-destructive hover:text-destructive"
           onClick={() => setConfirming(true)}
         >
-          <Trash2 className="size-4" />
+          <IconTrash className="size-4" />
           Start over
         </Button>
       </div>
@@ -107,26 +106,3 @@ export function DataSection() {
   )
 }
 
-function ThemeToggle() {
-  const [dark, setDark] = useState(
-    typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
-  )
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => {
-        const next = !dark
-        document.documentElement.classList.toggle('dark', next)
-        try {
-          localStorage.setItem('theme', next ? 'dark' : 'light')
-        } catch {}
-        setDark(next)
-      }}
-    >
-      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-      {dark ? 'Light' : 'Dark'}
-    </Button>
-  )
-}

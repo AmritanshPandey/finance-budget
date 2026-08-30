@@ -14,6 +14,7 @@ import {
 } from '@/components/month/edit-scope-drawer'
 import { ImpactBar } from '@/components/impact-bar'
 import { compareMonth, currentMonth, formatMonthLabel } from '@/lib/domain/month'
+import { formatINR } from '@/lib/domain/money'
 import {
   addCategory,
   clearOverride,
@@ -40,6 +41,22 @@ export function MonthScreen() {
     () => (doc ? switcherRange(doc.settings.startMonth) : []),
     [doc],
   )
+
+  /**
+   * A slider track is only useful if it is scaled to its neighbours. One global
+   * maximum lets a ₹78,000 EMI squash every other line into the first inch, so
+   * each group gets its own scale.
+   */
+  const sliderMaxByGroup = useMemo(() => {
+    const scales = new Map<string, number>()
+    if (!view) return scales
+    scales.set('__income__', Math.max(Math.round(view.incomeTotal * 1.6), 10_000_00))
+    for (const group of view.expenseGroups) {
+      const biggest = group.lines.reduce((max, l) => Math.max(max, l.amount), 0)
+      scales.set(group.id, Math.max(Math.round(biggest * 1.6), 10_000_00))
+    }
+    return scales
+  }, [view])
 
   if (!doc || !view) return null
 
@@ -91,12 +108,16 @@ export function MonthScreen() {
     commitAmount(line.lineId, amount, 'future', line.amount)
   }
 
-  function renderLine(line: ResolvedLine) {
+  function renderLine(line: ResolvedLine, groupKey: string) {
+    const category = doc?.categories.find((c) => c.id === line.categoryId)
     return (
       <LineRow
         key={line.lineId}
         line={line}
         frozen={frozen}
+        color={category?.color}
+        icon={category?.icon}
+        sliderMax={sliderMaxByGroup.get(groupKey) ?? 10_000_00}
         onAmountChange={(amount) => handleAmountChange(line, amount)}
         onRename={(name) => apply((d) => renameCategory(d, line.categoryId, name))}
         onClearOverride={() =>
@@ -125,13 +146,19 @@ export function MonthScreen() {
         frozen={frozen}
       />
 
-      <div className="mt-6 space-y-3">
+      <section className="mt-5 rounded-3xl border bg-card p-4">
+        <p className="label-xs">Estimated monthly income</p>
+        <p className="num-xl mt-1">{formatINR(incomeTotal)}</p>
+      </section>
+
+      <div className="mt-3 space-y-3">
         <GroupSection
           name="Income"
           subtotal={incomeTotal}
+          defaultOpen={false}
           onAdd={frozen ? undefined : () => setAddingTo('__income__')}
         >
-          {income.map(renderLine)}
+          {income.map((line) => renderLine(line, '__income__'))}
           {addingTo === '__income__' && (
             <NewLineRow
               onCancel={() => setAddingTo(null)}
@@ -160,7 +187,7 @@ export function MonthScreen() {
             muted={group.derived}
             onAdd={frozen || group.derived ? undefined : () => setAddingTo(group.id)}
           >
-            {group.lines.map(renderLine)}
+            {group.lines.map((line) => renderLine(line, group.id))}
             {addingTo === group.id && (
               <NewLineRow
                 onCancel={() => setAddingTo(null)}

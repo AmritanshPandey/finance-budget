@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { IconPlus, IconX } from '@tabler/icons-react'
 
 import { RupeeField } from '@/components/rupee-field'
 import { PercentField } from '@/components/setup/assumptions-section'
@@ -44,7 +44,7 @@ export function LoansSection({ doc }: { doc: BudgetDoc }) {
       caption="Each one becomes a monthly payment that stops on its own."
       action={
         <Button size="sm" variant="outline" onClick={() => setAdding((a) => !a)}>
-          <Plus className="size-4" />
+          <IconPlus className="size-4" />
           Add
         </Button>
       }
@@ -169,7 +169,7 @@ function LoanRow({ loan }: { loan: Loan }) {
           aria-label={`Remove ${loan.name}`}
           className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
         >
-          <X className="size-3.5" />
+          <IconX className="size-3.5" />
         </button>
       </div>
 

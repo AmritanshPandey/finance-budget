@@ -1,5 +1,5 @@
-import { MonthScreen } from '@/components/month/month-screen'
+import { OverviewScreen } from '@/components/overview/overview-screen'
 
-export default function MonthPage() {
-  return <MonthScreen />
+export default function OverviewPage() {
+  return <OverviewScreen />
 }

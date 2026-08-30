@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { IconTrash } from '@tabler/icons-react'
 
 import { RupeeField } from '@/components/rupee-field'
 import { PercentField } from '@/components/setup/assumptions-section'
@@ -223,7 +223,7 @@ function GoalForm({
               className="text-destructive hover:text-destructive"
               onClick={() => onDelete(local.id as string)}
             >
-              <Trash2 className="size-4" />
+              <IconTrash className="size-4" />
               Delete goal
             </Button>
           )}

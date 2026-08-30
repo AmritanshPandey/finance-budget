@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarRange, CalendarClock } from 'lucide-react'
+import { IconCalendarRepeat, IconCalendarTime } from '@tabler/icons-react'
 
 import {
   Drawer,
@@ -50,13 +50,13 @@ export function EditScopeDrawer({
 
         <DrawerFooter className="gap-2">
           <ScopeButton
-            icon={<CalendarClock className="size-5" strokeWidth={2} />}
+            icon={<IconCalendarTime className="size-5" stroke={2} />}
             title={`Just ${edit ? formatMonthLabel(edit.month) : 'this month'}`}
             detail="A one-off. Every other month keeps its plan."
             onClick={() => onResolve('month')}
           />
           <ScopeButton
-            icon={<CalendarRange className="size-5" strokeWidth={2} />}
+            icon={<IconCalendarRepeat className="size-5" stroke={2} />}
             title="This month and all future"
             detail="A real change — it carries forward from here."
             onClick={() => onResolve('future')}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { IconChevronDown } from '@tabler/icons-react'
 
 import { RupeeField } from '@/components/rupee-field'
 import { describeCadence, type Cadence } from '@/lib/domain/cadence'
@@ -74,7 +74,7 @@ export function CadenceField({
         )}
       >
         {describeCadence(cadence)}
-        <ChevronDown className={cn('size-3 transition-transform', open && 'rotate-180')} />
+        <IconChevronDown className={cn('size-3 transition-transform', open && 'rotate-180')} />
       </button>
 
       {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}

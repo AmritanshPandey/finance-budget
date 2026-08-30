@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Archive, Lock, LockOpen, Plus, Undo2 } from 'lucide-react'
+import { IconArchive, IconArrowBackUp, IconLock, IconLockOpen, IconPlus } from '@tabler/icons-react'
 
 import { Section } from '@/components/setup/section'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import {
   renameGroup,
   lineForCategory,
   restoreCategory,
+  setCategoryDueDay,
   setCategoryKind,
   setCategoryLocked,
   setLineGrowthRate,
@@ -83,7 +84,7 @@ export function CategoriesSection({ doc }: { doc: BudgetDoc }) {
               setNewGroup('')
             }}
           >
-            <Plus className="size-4" />
+            <IconPlus className="size-4" />
             Group
           </Button>
         </div>
@@ -104,7 +105,7 @@ export function CategoriesSection({ doc }: { doc: BudgetDoc }) {
                     onClick={() => apply((d) => restoreCategory(d, category.id))}
                     className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                   >
-                    <Undo2 className="size-3.5" />
+                    <IconArrowBackUp className="size-3.5" />
                     Restore
                   </button>
                 </li>
@@ -147,7 +148,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
           aria-label={`Archive ${category.name}`}
           className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
         >
-          <Archive className="size-3.5" />
+          <IconArchive className="size-3.5" />
         </button>
       </div>
 
@@ -199,6 +200,27 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
           % a year
         </label>
 
+        {/* A due day is what puts a bill on the overview. */}
+        {category.kind === 'expense' && (
+          <label className="flex items-center gap-1 rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground">
+            due
+            <input
+              inputMode="numeric"
+              placeholder="—"
+              aria-label={`Day of the month ${category.name} falls due`}
+              value={category.dueDay ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value.trim()
+                if (raw === '') return apply((d) => setCategoryDueDay(d, category.id, undefined))
+                const day = Number(raw)
+                if (!Number.isInteger(day) || day < 1 || day > 31) return
+                apply((d) => setCategoryDueDay(d, category.id, day))
+              }}
+              className="w-6 bg-transparent text-center tnum outline-none placeholder:text-muted-foreground/50"
+            />
+          </label>
+        )}
+
         {investing && (
           <button
             onClick={() => apply((d) => setCategoryLocked(d, category.id, !category.locked))}
@@ -210,7 +232,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
                 : 'bg-background text-muted-foreground hover:bg-accent',
             )}
           >
-            {category.locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
+            {category.locked ? <IconLock className="size-3" /> : <IconLockOpen className="size-3" />}
             {category.locked ? 'Locked away' : 'Goals can use it'}
           </button>
         )}

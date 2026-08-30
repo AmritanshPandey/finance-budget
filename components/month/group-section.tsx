@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, Plus } from 'lucide-react'
+import { IconChevronRight, IconPlus } from '@tabler/icons-react'
 
 import { formatINR } from '@/lib/domain/money'
 import type { Paise } from '@/lib/domain/types'
@@ -29,19 +29,19 @@ export function GroupSection({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <section className="rounded-xl border bg-card">
+    <section className="rounded-3xl border bg-card">
       <div className="flex items-center">
         <button
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2.5 text-left"
+          className="flex flex-1 items-center gap-2 rounded-3xl px-4 py-3 text-left"
         >
-          <ChevronRight
+          <IconChevronRight
             className={cn(
               'size-4 shrink-0 text-muted-foreground transition-transform',
               open && 'rotate-90',
             )}
-            strokeWidth={2.2}
+            stroke={2.2}
           />
           <span
             className={cn(
@@ -61,12 +61,12 @@ export function GroupSection({
             aria-label={`Add a line to ${name}`}
             className="mr-2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <Plus className="size-4" strokeWidth={2.2} />
+            <IconPlus className="size-4" stroke={2.2} />
           </button>
         )}
       </div>
 
-      {open && <div className="border-t px-2 py-1.5">{children}</div>}
+      {open && <div className="border-t px-3 py-1.5">{children}</div>}
     </section>
   )
 }

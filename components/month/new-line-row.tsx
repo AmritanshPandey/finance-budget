@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { IconCheck, IconX } from '@tabler/icons-react'
 
 import { parseAmount } from '@/lib/domain/money'
 import type { Paise } from '@/lib/domain/types'
@@ -56,14 +56,14 @@ export function NewLineRow({
         aria-label="Add line"
         className="rounded-md p-1.5 text-primary transition-colors hover:bg-primary/10"
       >
-        <Check className="size-4" strokeWidth={2.4} />
+        <IconCheck className="size-4" stroke={2.4} />
       </button>
       <button
         onClick={onCancel}
         aria-label="Cancel"
         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent"
       >
-        <X className="size-4" strokeWidth={2.4} />
+        <IconX className="size-4" stroke={2.4} />
       </button>
     </div>
   )

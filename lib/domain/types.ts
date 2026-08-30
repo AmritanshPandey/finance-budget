@@ -40,6 +40,12 @@ export interface Category {
    * until you are 60, PPF until maturity). Locked money still counts as wealth.
    */
   locked?: boolean
+  /** Semantic icon key from lib/domain/look. Inferred from the name, overridable. */
+  icon?: string
+  /** Palette token name from lib/domain/look. Inferred from the name, overridable. */
+  color?: string
+  /** Day of the month this falls due, 1–31. Drives "Bills due soon". */
+  dueDay?: number
   /** Archived, never deleted — historical months must still resolve it. */
   archivedAt?: ISODate
 }
@@ -137,6 +143,20 @@ export interface OneOff {
   label: string
 }
 
+/**
+ * What actually happened. Amount is always positive; `direction` says which way
+ * it moved, matching how OneOff already reads.
+ */
+export interface Transaction {
+  id: string
+  date: ISODate
+  amount: Paise
+  direction: 'in' | 'out'
+  categoryId: string
+  merchant?: string
+  note?: string
+}
+
 export interface BalanceCheck {
   id: string
   date: ISODate
@@ -183,6 +203,9 @@ export interface BudgetDoc {
   goals: Goal[]
   oneOffs: OneOff[]
   balanceChecks: BalanceCheck[]
+  transactions: Transaction[]
+  /** Normalised merchant → categoryId, so a repeat shop pre-fills next time. */
+  merchantMemory: Record<string, string>
   onboardedAt?: ISODate
 }
 
@@ -231,6 +254,8 @@ export interface FundedGoalRef {
 
 export interface ProjectedMonth {
   month: ISOMonth
+  /** True when this month is over and driven by real transactions. */
+  settled: boolean
   income: Paise
   expenses: Paise
   emis: Paise

@@ -9,8 +9,9 @@
  * following month, and reported as late — never silently dropped.
  */
 
+import { hasActuals, hasIncomeActuals, monthActuals } from './actuals'
 import { loanEMI } from './loan'
-import { addMonths, compareMonth, monthOfDate, monthsBetween } from './month'
+import { addMonths, compareMonth, currentMonth, monthOfDate, monthsBetween } from './month'
 import { scale } from './money'
 import { resolveMonth } from './resolve-month'
 import type {
@@ -73,7 +74,13 @@ function loanForGoal(goal: Goal, fundedMonth: ISOMonth): Loan | null {
   }
 }
 
-export function project(doc: BudgetDoc): Projection {
+/**
+ * @param opts.now the month treated as "this month". Months strictly before it
+ *   are driven by real transactions where any exist; this month and every month
+ *   after are driven by the plan, because this month is not over yet.
+ */
+export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
+  const now = opts?.now ?? currentMonth()
   const origin = projectionOrigin(doc)
   const { horizonMonths, expectedAnnualReturnPct } = doc.settings
   const monthlyReturn = expectedAnnualReturnPct / 12 / 100
@@ -107,15 +114,37 @@ export function project(doc: BudgetDoc): Projection {
     )
 
     // resolved.surplus has already had investment contributions taken out.
-    const surplus = resolved.surplus + oneOffNet
+    // A month that has ended and has transactions is reported, not predicted.
+    const settled = compareMonth(month, now) < 0 && hasActuals(doc, month)
+    const actual = settled ? monthActuals(doc, month) : null
+
+    let income = resolved.income
+    let expenses = resolved.expenses + resolved.emis
+    let contributedAvailable = 0
+    let contributedLocked = 0
+
+    if (actual) {
+      // Income falls back to the plan unless income was logged too — otherwise
+      // a month where only spending was recorded would look catastrophic.
+      income = hasIncomeActuals(doc, month) ? actual.received : resolved.income
+      expenses = actual.spent
+      contributedAvailable = actual.investedAvailable
+      contributedLocked = actual.investedLocked
+    } else {
+      for (const line of resolved.lines) {
+        if (line.kind !== 'investment') continue
+        if (line.locked) contributedLocked += line.amount
+        else contributedAvailable += line.amount
+      }
+    }
+
+    const surplus =
+      income - expenses - contributedAvailable - contributedLocked + oneOffNet
     const openingBalance = balance
     balance += surplus
 
-    for (const line of resolved.lines) {
-      if (line.kind !== 'investment') continue
-      if (line.locked) investedLocked += line.amount
-      else investedAvailable += line.amount
-    }
+    investedAvailable += contributedAvailable
+    investedLocked += contributedLocked
 
     // Returns accrue on money you actually have.
     const cashReturns = balance > 0 ? scale(balance, monthlyReturn) : 0
@@ -156,10 +185,11 @@ export function project(doc: BudgetDoc): Projection {
 
     months.push({
       month,
-      income: resolved.income,
-      expenses: resolved.expenses,
-      emis: resolved.emis,
-      investments: resolved.investments,
+      settled: Boolean(actual),
+      income,
+      expenses: actual ? actual.spent : resolved.expenses,
+      emis: actual ? 0 : resolved.emis,
+      investments: contributedAvailable + contributedLocked,
       surplus,
       openingBalance,
       closingBalance: balance,

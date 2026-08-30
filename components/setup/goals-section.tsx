@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Plus } from 'lucide-react'
+import { IconGripVertical, IconPlus } from '@tabler/icons-react'
 
 import { Section } from '@/components/setup/section'
 import {
@@ -82,7 +82,7 @@ export function GoalsSection({ doc }: { doc: BudgetDoc }) {
       caption="Drag to rank them. The one on top gets the money first."
       action={
         <Button size="sm" variant="outline" onClick={() => setDraft(emptyDraft())}>
-          <Plus className="size-4" />
+          <IconPlus className="size-4" />
           Add
         </Button>
       }
@@ -164,7 +164,7 @@ function SortableGoal({
         aria-label={`Reorder ${goal.name}`}
         className="cursor-grab touch-none rounded-md p-1 text-muted-foreground active:cursor-grabbing"
       >
-        <GripVertical className="size-4" />
+        <IconGripVertical className="size-4" />
       </button>
 
       <span className="w-4 text-center text-xs font-medium text-muted-foreground">{rank}</span>

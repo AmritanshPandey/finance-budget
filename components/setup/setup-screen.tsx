@@ -4,7 +4,6 @@ import { AssumptionsSection } from '@/components/setup/assumptions-section'
 import { BalanceCheckSection } from '@/components/setup/balance-check-section'
 import { CategoriesSection } from '@/components/setup/categories-section'
 import { DataSection } from '@/components/setup/data-section'
-import { GoalsSection } from '@/components/setup/goals-section'
 import { LoansSection } from '@/components/setup/loans-section'
 import { OneOffsSection } from '@/components/setup/one-offs-section'
 import { useBudget } from '@/lib/state/store'
@@ -22,7 +21,6 @@ export function SetupScreen() {
         </p>
       </header>
 
-      <GoalsSection doc={doc} />
       <BalanceCheckSection doc={doc} />
       <OneOffsSection doc={doc} />
       <LoansSection doc={doc} />

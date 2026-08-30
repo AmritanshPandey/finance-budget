@@ -5,6 +5,7 @@
  */
 
 import { newId } from './id'
+import { inferLook } from './look'
 import { currentMonth } from './month'
 import { toPaise } from './money'
 import type {
@@ -99,6 +100,7 @@ export function createEmptyDoc(startMonth: ISOMonth = currentMonth()): BudgetDoc
     kind: seed.kind,
     order,
     inflatable: seed.inflatable,
+    ...inferLook(seed.name),
     ...(seed.locked ? { locked: true } : {}),
   }))
 
@@ -126,6 +128,8 @@ export function createEmptyDoc(startMonth: ISOMonth = currentMonth()): BudgetDoc
     goals: [],
     oneOffs: [],
     balanceChecks: [],
+    transactions: [],
+    merchantMemory: {},
   }
 }
 
@@ -150,6 +154,7 @@ export function addCategory(
     kind: input.kind,
     order: siblings.length,
     inflatable: input.inflatable ?? input.kind === 'expense',
+    ...inferLook(input.name),
   }
   const line: TemplateLine = {
     id: newId('line'),
