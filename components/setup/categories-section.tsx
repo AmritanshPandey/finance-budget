@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Archive, Plus, Undo2 } from 'lucide-react'
+import { Archive, Lock, LockOpen, Plus, Undo2 } from 'lucide-react'
 
 import { Section } from '@/components/setup/section'
 import { Button } from '@/components/ui/button'
@@ -12,9 +12,12 @@ import {
   renameCategory,
   renameGroup,
   restoreCategory,
+  setCategoryKind,
+  setCategoryLocked,
 } from '@/lib/domain/mutations'
 import { useBudget } from '@/lib/state/store'
-import type { BudgetDoc, Category } from '@/lib/domain/types'
+import type { BudgetDoc, Category, LineKind } from '@/lib/domain/types'
+import { cn } from '@/lib/utils'
 
 export function CategoriesSection({ doc }: { doc: BudgetDoc }) {
   const apply = useBudget((s) => s.apply)
@@ -26,7 +29,7 @@ export function CategoriesSection({ doc }: { doc: BudgetDoc }) {
   return (
     <Section
       title="Categories"
-      caption="Rename anything, move it anywhere. Past months keep the old names."
+      caption="Rename anything, move it anywhere, mark it as investing. Past months keep the old names."
     >
       <div className="space-y-5">
         {groups.map((group) => {
@@ -113,36 +116,73 @@ export function CategoriesSection({ doc }: { doc: BudgetDoc }) {
 function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) {
   const apply = useBudget((s) => s.apply)
   const groups = [...doc.groups].sort((a, b) => a.order - b.order)
+  const investing = category.kind === 'investment'
 
   return (
-    <li className="flex items-center gap-1.5">
-      <input
-        value={category.name}
-        onChange={(e) => apply((d) => renameCategory(d, category.id, e.target.value))}
-        aria-label={`Rename ${category.name}`}
-        className="min-w-0 flex-1 rounded-md bg-transparent px-1 py-1 text-sm outline-none focus:bg-accent/70"
-      />
-      <select
-        value={category.groupId}
-        aria-label={`Move ${category.name} to another group`}
-        onChange={(e) => apply((d) => moveCategoryToGroup(d, category.id, e.target.value))}
-        className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
-      >
-        {groups.map((group) => (
-          <option key={group.id} value={group.id}>
-            {group.name}
-          </option>
-        ))}
-      </select>
-      <button
-        onClick={() =>
-          apply((d) => archiveCategory(d, category.id, new Date().toISOString().slice(0, 10)))
-        }
-        aria-label={`Archive ${category.name}`}
-        className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-      >
-        <Archive className="size-3.5" />
-      </button>
+    <li className="rounded-lg border border-transparent px-0.5 py-1 hover:border-border">
+      <div className="flex items-center gap-1.5">
+        <input
+          value={category.name}
+          onChange={(e) => apply((d) => renameCategory(d, category.id, e.target.value))}
+          aria-label={`Rename ${category.name}`}
+          className="min-w-0 flex-1 rounded-md bg-transparent px-1 py-1 text-sm outline-none focus:bg-accent/70"
+        />
+        <button
+          onClick={() =>
+            apply((d) => archiveCategory(d, category.id, new Date().toISOString().slice(0, 10)))
+          }
+          aria-label={`Archive ${category.name}`}
+          className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Archive className="size-3.5" />
+        </button>
+      </div>
+
+      {category.kind !== 'income' && (
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-1">
+          <select
+            value={category.groupId}
+            aria-label={`Move ${category.name} to another group`}
+            onChange={(e) => apply((d) => moveCategoryToGroup(d, category.id, e.target.value))}
+            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+          >
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Investing is not spending: the money leaves your account but stays yours. */}
+          <select
+            value={category.kind}
+            aria-label={`Is ${category.name} spending or investing?`}
+            onChange={(e) =>
+              apply((d) => setCategoryKind(d, category.id, e.target.value as LineKind))
+            }
+            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+          >
+            <option value="expense">Spending</option>
+            <option value="investment">Investing</option>
+          </select>
+
+          {investing && (
+            <button
+              onClick={() => apply((d) => setCategoryLocked(d, category.id, !category.locked))}
+              aria-pressed={Boolean(category.locked)}
+              className={cn(
+                'flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs transition-colors',
+                category.locked
+                  ? 'border-warn/40 bg-warn-soft text-warn'
+                  : 'bg-background text-muted-foreground hover:bg-accent',
+              )}
+            >
+              {category.locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
+              {category.locked ? 'Locked away' : 'Goals can use it'}
+            </button>
+          )}
+        </div>
+      )}
     </li>
   )
 }

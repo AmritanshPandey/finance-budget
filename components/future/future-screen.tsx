@@ -30,8 +30,10 @@ export function FutureScreen() {
   )
   const rows = useMemo(() => buildRows(months), [months])
 
+  // The bar is net worth: with money going into investments each month, a
+  // cash-only line would look flat and tell you the wrong story.
   const scale = useMemo(() => {
-    const peak = months.reduce((max, m) => Math.max(max, m.closingBalance), 1)
+    const peak = months.reduce((max, m) => Math.max(max, m.netWorth), 1)
     return (value: number) => Math.max(0, Math.min(100, (value / peak) * 100))
   }, [months])
 
@@ -147,7 +149,7 @@ function QuietBand({
     )
   }
 
-  const growth = last.closingBalance - first.openingBalance
+  const growth = last.netWorth - first.openingBalance
 
   return (
     <li>
@@ -180,8 +182,11 @@ function MonthRow({
   const setSelectedMonth = useUi((s) => s.setSelectedMonth)
   const goalOutcomes = useBudget((s) => s.projection?.goalOutcomes ?? [])
 
-  const belowFloor = month.closingBalance < month.floor
-  const width = scale(month.closingBalance)
+  // What goals can actually reach: cash plus the investments they may touch.
+  const spendable = month.closingBalance + month.investedAvailable
+  const belowFloor = spendable < month.floor
+  const width = scale(month.netWorth)
+  const investedWidth = scale(month.investedAvailable + month.investedLocked)
   const floorWidth = scale(month.floor)
 
   return (
@@ -205,6 +210,14 @@ function MonthRow({
             )}
             style={{ width: `${width}%` }}
           />
+          {/* The invested share of that net worth, shaded darker. */}
+          {investedWidth > 0 && (
+            <span
+              className="absolute inset-y-0 right-0 bg-chart-3/70"
+              style={{ width: `${Math.min(investedWidth, width)}%`, left: `${Math.max(0, width - investedWidth)}%` }}
+              aria-hidden
+            />
+          )}
           {/* The floor you promised never to cross. */}
           <span
             className="absolute inset-y-0 w-px bg-foreground/35"
@@ -219,7 +232,7 @@ function MonthRow({
             belowFloor && 'text-negative',
           )}
         >
-          {formatCompactINR(month.closingBalance)}
+          {formatCompactINR(month.netWorth)}
         </span>
       </button>
 

@@ -137,8 +137,7 @@ describe('loans', () => {
     const loan: Loan = {
       id: 'l1',
       name: 'Car loan',
-      principal: toPaise(600_000),
-      annualRatePct: 9,
+      spec: { mode: 'principal', principal: toPaise(600_000), annualRatePct: 9 },
       tenureMonths: 36,
       startMonth: '2026-03',
     }

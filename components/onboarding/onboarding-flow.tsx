@@ -2,28 +2,31 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Lock } from 'lucide-react'
 
 import { RupeeField } from '@/components/rupee-field'
 import { Button } from '@/components/ui/button'
-import { createEmptyDoc, setAmountByName } from '@/lib/domain/factory'
+import {
+  SEED_CATEGORIES,
+  SEED_LOAN,
+  createEmptyDoc,
+  setAmountByName,
+} from '@/lib/domain/factory'
 import { newId } from '@/lib/domain/id'
 import { addMonths, currentMonth, formatMonthLabel } from '@/lib/domain/month'
 import { formatINR, toPaise } from '@/lib/domain/money'
 import { useBudget } from '@/lib/state/store'
 import { cn } from '@/lib/utils'
-import type { BudgetDoc, Goal, Paise } from '@/lib/domain/types'
+import type { BudgetDoc, Goal, Loan, Paise } from '@/lib/domain/types'
 
-const EXPENSE_FIELDS = ['Rent', 'Utilities', 'Food', 'Transport', 'Subscriptions', 'Other'] as const
+const OUTGOINGS = SEED_CATEGORIES.filter((c) => c.kind !== 'income')
 
 const GOAL_TEMPLATES = [
   { emoji: '🎓', name: "Master's", rupees: 2_000_000, yearsOut: 3 },
   { emoji: '🚗', name: 'Car', rupees: 800_000, yearsOut: 2 },
   { emoji: '✈️', name: 'Travel', rupees: 200_000, yearsOut: 1 },
-  { emoji: '🛍️', name: 'Big purchase', rupees: 100_000, yearsOut: 1 },
+  { emoji: '🎯', name: 'Something else', rupees: 100_000, yearsOut: 1, custom: true },
 ] as const
-
-type Expenses = Record<string, Paise>
 
 export function OnboardingFlow() {
   const router = useRouter()
@@ -31,7 +34,11 @@ export function OnboardingFlow() {
 
   const [step, setStep] = useState(0)
   const [income, setIncome] = useState<Paise>(0)
-  const [expenses, setExpenses] = useState<Expenses>({})
+  const [amounts, setAmounts] = useState<Record<string, Paise>>(() =>
+    Object.fromEntries(OUTGOINGS.map((c) => [c.name, toPaise(c.rupees ?? 0)])),
+  )
+  const [emi, setEmi] = useState<Paise>(toPaise(SEED_LOAN.rupees))
+  const [monthsLeft, setMonthsLeft] = useState(SEED_LOAN.defaultMonthsLeft)
   const [balance, setBalance] = useState<Paise>(0)
   const [goal, setGoal] = useState<{
     emoji: string
@@ -40,39 +47,62 @@ export function OnboardingFlow() {
     targetMonth: string
   } | null>(null)
 
-  const spent = Object.values(expenses).reduce((a, b) => a + b, 0)
+  const spending = OUTGOINGS.filter((c) => c.kind === 'expense').reduce(
+    (a, c) => a + (amounts[c.name] ?? 0),
+    0,
+  )
+  const investing = OUTGOINGS.filter((c) => c.kind === 'investment').reduce(
+    (a, c) => a + (amounts[c.name] ?? 0),
+    0,
+  )
+  const leftover = income - spending - investing - emi
 
   function finish() {
     const start = currentMonth()
     let doc: BudgetDoc = createEmptyDoc(start)
     doc = setAmountByName(doc, 'Salary', income / 100)
-    for (const field of EXPENSE_FIELDS) {
-      doc = setAmountByName(doc, field, (expenses[field] ?? 0) / 100)
+    for (const seed of OUTGOINGS) {
+      doc = setAmountByName(doc, seed.name, (amounts[seed.name] ?? 0) / 100)
     }
 
-    const goals: Goal[] = goal
-      ? [
-          {
-            id: newId('goal'),
-            name: goal.name,
-            emoji: goal.emoji,
-            targetAmount: goal.amount,
-            targetMonth: goal.targetMonth,
-            priority: 0,
-            funding: 'savings',
-            status: 'active',
-          },
-        ]
-      : []
+    const loans: Loan[] =
+      emi > 0 && monthsLeft > 0
+        ? [
+            {
+              id: newId('loan'),
+              name: SEED_LOAN.name,
+              spec: { mode: 'emi', emi },
+              tenureMonths: monthsLeft,
+              startMonth: start,
+            },
+          ]
+        : []
+
+    const goals: Goal[] =
+      goal && goal.name.trim()
+        ? [
+            {
+              id: newId('goal'),
+              name: goal.name.trim(),
+              emoji: goal.emoji,
+              targetAmount: goal.amount,
+              targetMonth: goal.targetMonth,
+              priority: 0,
+              funding: 'savings',
+              status: 'active',
+            },
+          ]
+        : []
 
     initialize({
       ...doc,
+      loans,
       goals,
       settings: {
         ...doc.settings,
         startingBalance: balance,
         // A starting suggestion, not a rule — changed in Setup at any time.
-        monthlySavingTarget: Math.round((income * 0.2) / 1000) * 1000,
+        monthlySavingTarget: Math.max(0, Math.round(leftover / 100_000) * 100_000),
       },
       onboardedAt: new Date().toISOString().slice(0, 10),
     })
@@ -87,7 +117,7 @@ export function OnboardingFlow() {
       body: (
         <RupeeField
           label="Monthly income"
-          hint="You can add freelance income, bonuses and anything else later."
+          hint="Bonuses and freelance work go in later, as one-off money."
           value={income}
           onChange={setIncome}
           autoFocus
@@ -95,24 +125,69 @@ export function OnboardingFlow() {
       ),
     },
     {
-      title: 'Where does it go?',
-      caption: 'Rough numbers are fine. Rename or delete any of these later.',
-      canAdvance: true,
+      title: 'Does this look right?',
+      caption: 'Already filled in from your budget. Change anything that has moved.',
+      canAdvance: monthsLeft > 0,
       body: (
-        <div className="space-y-5">
-          {EXPENSE_FIELDS.map((field) => (
-            <RupeeField
-              key={field}
-              label={field}
-              value={expenses[field] ?? 0}
-              onChange={(next) => setExpenses((e) => ({ ...e, [field]: next }))}
-            />
+        <div className="space-y-8">
+          <div className="rounded-xl border bg-card p-4">
+            <RupeeField label="Loan — leaves your account monthly" value={emi} onChange={setEmi} />
+            <label className="mt-5 block">
+              <span className="label-xs">Months still to pay</span>
+              <input
+                inputMode="decimal"
+                value={monthsLeft}
+                onChange={(e) => {
+                  const next = Number(e.target.value)
+                  if (Number.isFinite(next) && next >= 0) setMonthsLeft(next)
+                }}
+                className="mt-1.5 w-full border-b-2 bg-transparent pb-1 num-lg outline-none focus:border-primary"
+              />
+              <span className="mt-1.5 block text-xs text-muted-foreground">
+                {monthsLeft > 0 ? (
+                  <>
+                    Paid off {formatMonthLabel(addMonths(currentMonth(), monthsLeft - 1))} — then{' '}
+                    <span className="text-foreground">{formatINR(emi)}</span> a month comes back
+                    to you.
+                  </>
+                ) : (
+                  'This is the one number that most changes your future. Worth checking.'
+                )}
+              </span>
+            </label>
+          </div>
+
+          {[...new Set(OUTGOINGS.map((c) => c.group))].map((group) => (
+            <div key={group}>
+              <p className="label-xs">{group}</p>
+              <div className="mt-3 space-y-5">
+                {OUTGOINGS.filter((c) => c.group === group).map((seed) => (
+                  <div key={seed.name}>
+                    <RupeeField
+                      label={seed.name}
+                      value={amounts[seed.name] ?? 0}
+                      onChange={(next) => setAmounts((a) => ({ ...a, [seed.name]: next }))}
+                    />
+                    {seed.kind === 'investment' && (
+                      <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Lock className="size-3" />
+                        {seed.locked
+                          ? 'Invested and locked away — goals can’t use it'
+                          : 'Invested — still counts toward your goals'}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
+
           {income > 0 && (
-            <p className="text-sm text-muted-foreground">
-              That leaves{' '}
-              <span className={cn('tnum font-medium', income - spent < 0 ? 'text-negative' : 'text-foreground')}>
-                {formatINR(income - spent)}
+            <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
+              <span className="tnum">{formatINR(spending + emi)}</span> spent ·{' '}
+              <span className="tnum">{formatINR(investing)}</span> invested · leaves{' '}
+              <span className={cn('tnum font-medium', leftover < 0 ? 'text-negative' : 'text-foreground')}>
+                {formatINR(leftover)}
               </span>{' '}
               a month.
             </p>
@@ -127,7 +202,7 @@ export function OnboardingFlow() {
       body: (
         <RupeeField
           label="Current balance"
-          hint="Savings you can actually reach. You can correct this any time."
+          hint="Cash you can actually reach. Investments you already hold come later."
           value={balance}
           onChange={setBalance}
           autoFocus
@@ -137,12 +212,15 @@ export function OnboardingFlow() {
     {
       title: 'What are you saving towards?',
       caption: 'One is enough to start. Add the rest later.',
-      canAdvance: true,
+      canAdvance: !goal || goal.name.trim().length > 0,
       body: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
             {GOAL_TEMPLATES.map((template) => {
-              const selected = goal?.name === template.name
+              const custom = 'custom' in template && template.custom
+              const selected = custom
+                ? goal !== null && !GOAL_TEMPLATES.some((t) => t.name === goal.name)
+                : goal?.name === template.name
               return (
                 <button
                   key={template.name}
@@ -152,7 +230,7 @@ export function OnboardingFlow() {
                         ? null
                         : {
                             emoji: template.emoji,
-                            name: template.name,
+                            name: custom ? '' : template.name,
                             amount: toPaise(template.rupees),
                             targetMonth: addMonths(currentMonth(), template.yearsOut * 12),
                           },
@@ -171,9 +249,19 @@ export function OnboardingFlow() {
           </div>
 
           {goal && (
-            <div className="space-y-4 rounded-xl border bg-card p-4">
+            <div className="space-y-5 rounded-xl border bg-card p-4">
+              <label className="block">
+                <span className="label-xs">Call it</span>
+                <input
+                  autoFocus={!goal.name}
+                  value={goal.name}
+                  placeholder="A house deposit"
+                  onChange={(e) => setGoal({ ...goal, name: e.target.value })}
+                  className="mt-1.5 w-full border-b-2 bg-transparent pb-1 text-lg outline-none focus:border-primary placeholder:text-muted-foreground/50"
+                />
+              </label>
               <RupeeField
-                label={`How much for ${goal.name}?`}
+                label="How much"
                 value={goal.amount}
                 onChange={(amount) => setGoal({ ...goal, amount })}
               />
@@ -219,7 +307,7 @@ export function OnboardingFlow() {
         <div className="mt-8">{active.body}</div>
       </div>
 
-      <div className="flex items-center gap-3 pt-8">
+      <div className="sticky bottom-0 flex items-center gap-3 bg-background pb-2 pt-8">
         {step > 0 && (
           <Button variant="ghost" size="lg" onClick={() => setStep((s) => s - 1)}>
             <ArrowLeft className="size-4" />

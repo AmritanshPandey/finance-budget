@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Lock, RotateCcw } from 'lucide-react'
+import { Lock, PiggyBank, RotateCcw } from 'lucide-react'
 
 import { AmountInput } from '@/components/amount-input'
 import { formatMonthLabel } from '@/lib/domain/month'
@@ -22,20 +22,28 @@ export function LineRow({
   onClearOverride: () => void
 }) {
   const derived = Boolean(line.loanId)
-  const editable = !frozen && !derived
+  // A derived EMI can still be varied for a single month; only its *name*
+  // belongs to the loan.
+  const editable = !frozen
 
   return (
     <div className="flex items-center gap-2 py-0.5 pl-1">
       <div className="min-w-0 flex-1">
         <NameField
           name={line.categoryName}
-          editable={editable}
+          editable={editable && !derived}
           onRename={onRename}
         />
         {derived && line.endsMonth && (
           <p className="flex items-center gap-1 pl-2 text-xs text-muted-foreground">
             <Lock className="size-3" strokeWidth={2} />
             ends {formatMonthLabel(line.endsMonth)}
+          </p>
+        )}
+        {line.kind === 'investment' && (
+          <p className="flex items-center gap-1 pl-2 text-xs text-muted-foreground">
+            <PiggyBank className="size-3" strokeWidth={2} />
+            {line.locked ? 'locked away — goals can’t use it' : 'counts toward goals'}
           </p>
         )}
         {line.overridden && !frozen && (

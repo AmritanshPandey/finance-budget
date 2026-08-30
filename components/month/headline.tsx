@@ -12,12 +12,14 @@ export function Headline({
   target,
   income,
   expenses,
+  investments,
   frozen,
 }: {
   surplus: Paise
   target: Paise
   income: Paise
   expenses: Paise
+  investments: Paise
   frozen: boolean
 }) {
   const negative = surplus < 0
@@ -65,6 +67,12 @@ export function Headline({
       <p className="mt-3 text-sm text-muted-foreground">
         <span className="tnum">{formatINR(income)}</span> in ·{' '}
         <span className="tnum">{formatINR(expenses)}</span> out
+        {investments > 0 && (
+          <>
+            {' '}
+            · <span className="tnum text-foreground">{formatINR(investments)}</span> invested
+          </>
+        )}
         {frozen && <span className="ml-2 text-muted-foreground/70">· closed</span>}
       </p>
     </section>

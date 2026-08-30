@@ -10,16 +10,21 @@ import type { BudgetDoc, Goal, ISOMonth } from '../types'
  */
 export function plainDoc(startMonth: ISOMonth = '2026-01'): BudgetDoc {
   let doc = createEmptyDoc(startMonth)
-  doc = setAmountByName(doc, 'Salary', 100_000)
-  doc = setAmountByName(doc, 'Rent', 25_000)
 
-  // Strip the growth rate the seed gives Rent so the numbers stay flat.
+  // Start from a blank slate: zero every seeded amount and every growth rate,
+  // so each assertion below is arithmetic anyone can check by hand.
   doc = {
     ...doc,
     templateLines: doc.templateLines.map((line) => ({
       ...line,
-      versions: line.versions.map((v) => ({ ...v, growthRatePct: 0 })),
+      versions: line.versions.map((v) => ({ ...v, amount: 0, growthRatePct: 0 })),
     })),
+  }
+  doc = setAmountByName(doc, 'Salary', 100_000)
+  doc = setAmountByName(doc, 'Rent', 25_000)
+
+  doc = {
+    ...doc,
     settings: {
       ...doc.settings,
       startingBalance: 0,
@@ -52,4 +57,20 @@ export function goal(input: {
 
 export function withGoals(doc: BudgetDoc, goals: Goal[]): BudgetDoc {
   return { ...doc, goals }
+}
+
+/** Turn one of the seeded categories into a monthly investment. */
+export function investing(
+  doc: BudgetDoc,
+  categoryName: string,
+  rupees: number,
+  locked = false,
+): BudgetDoc {
+  const next = setAmountByName(doc, categoryName, rupees)
+  return {
+    ...next,
+    categories: next.categories.map((c) =>
+      c.name === categoryName ? { ...c, kind: 'investment' as const, locked } : c,
+    ),
+  }
 }

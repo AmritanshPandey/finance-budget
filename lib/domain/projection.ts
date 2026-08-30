@@ -61,8 +61,11 @@ function loanForGoal(goal: Goal, fundedMonth: ISOMonth): Loan | null {
   return {
     id: `goal-loan:${goal.id}`,
     name: goal.name,
-    principal,
-    annualRatePct: goal.loanTerms.annualRatePct,
+    spec: {
+      mode: 'principal',
+      principal,
+      annualRatePct: goal.loanTerms.annualRatePct,
+    },
     tenureMonths: goal.loanTerms.tenureMonths,
     // The first EMI falls the month after the purchase.
     startMonth: addMonths(fundedMonth, 1),
@@ -88,6 +91,10 @@ export function project(doc: BudgetDoc): Projection {
 
   const months: ProjectedMonth[] = []
   let balance = origin.balance
+  // Investments are money too. They leave the monthly account but accumulate,
+  // and the locked pot is wealth that goals are never allowed to spend.
+  let investedAvailable = 0
+  let investedLocked = 0
 
   for (let i = 0; i < horizonMonths; i++) {
     const month = addMonths(origin.month, i)
@@ -99,13 +106,24 @@ export function project(doc: BudgetDoc): Projection {
       0,
     )
 
+    // resolved.surplus has already had investment contributions taken out.
     const surplus = resolved.surplus + oneOffNet
     const openingBalance = balance
     balance += surplus
 
+    for (const line of resolved.lines) {
+      if (line.kind !== 'investment') continue
+      if (line.locked) investedLocked += line.amount
+      else investedAvailable += line.amount
+    }
+
     // Returns accrue on money you actually have.
-    const returns = balance > 0 ? scale(balance, monthlyReturn) : 0
-    balance += returns
+    const cashReturns = balance > 0 ? scale(balance, monthlyReturn) : 0
+    balance += cashReturns
+    const availableReturns = scale(investedAvailable, monthlyReturn)
+    investedAvailable += availableReturns
+    const lockedReturns = scale(investedLocked, monthlyReturn)
+    investedLocked += lockedReturns
 
     const floor = safetyFloorFor(doc.settings.safetyFloor, resolved)
     const goalsFunded: FundedGoalRef[] = []
@@ -116,9 +134,13 @@ export function project(doc: BudgetDoc): Projection {
       if (compareMonth(goal.targetMonth, month) > 0) continue
 
       const cashOut = goalCashRequired(goal)
-      if (balance - floor < cashOut) continue
+      // Cash first, then investments you are actually allowed to touch.
+      if (balance + investedAvailable - floor < cashOut) continue
 
-      balance -= cashOut
+      const fromCash = Math.min(balance, cashOut)
+      balance -= fromCash
+      investedAvailable -= cashOut - fromCash
+
       pending.delete(goal.id)
       fundedAt.set(goal.id, month)
       goalsFunded.push({
@@ -137,11 +159,15 @@ export function project(doc: BudgetDoc): Projection {
       income: resolved.income,
       expenses: resolved.expenses,
       emis: resolved.emis,
+      investments: resolved.investments,
       surplus,
       openingBalance,
       closingBalance: balance,
-      returns,
+      returns: cashReturns + availableReturns + lockedReturns,
       floor,
+      investedAvailable,
+      investedLocked,
+      netWorth: balance + investedAvailable + investedLocked,
       oneOffs,
       events: resolved.lines
         .filter((l) => l.label)
@@ -181,7 +207,7 @@ export function projectedMonth(
   return projection.months.find((m) => m.month === month)
 }
 
-/** Total monthly EMI burden in a given month, for display. */
+/** Total monthly EMI burden, for display. */
 export function emiBurden(loans: Loan[]): Paise {
   return loans.reduce((acc, loan) => acc + loanEMI(loan), 0)
 }

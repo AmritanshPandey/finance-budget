@@ -9,7 +9,12 @@ export type ISOMonth = string // "2026-08"
 export type ISODate = string // "2026-08-30"
 export type Paise = number // integer minor units
 
-export type LineKind = 'income' | 'expense'
+/**
+ * `investment` is money that leaves your monthly account but does not vanish —
+ * it accumulates into a pot. Treating an SIP as an expense understates your
+ * wealth by every rupee you ever put in.
+ */
+export type LineKind = 'income' | 'expense' | 'investment'
 
 // ---------------------------------------------------------------------------
 // Structure
@@ -30,6 +35,11 @@ export interface Category {
   order: number
   /** Global inflation applies to this category in the forecast. */
   inflatable: boolean
+  /**
+   * Investments only: the money is real but goals may never draw on it (NPS
+   * until you are 60, PPF until maturity). Locked money still counts as wealth.
+   */
+  locked?: boolean
   /** Archived, never deleted — historical months must still resolve it. */
   archivedAt?: ISODate
 }
@@ -80,11 +90,19 @@ export interface MonthSnapshot {
 // Future
 // ---------------------------------------------------------------------------
 
+/**
+ * Two ways to describe a loan. `emi` is what people actually know off the top of
+ * their head — "₹78,000 a month, 43 months left". `principal` is the full terms,
+ * which additionally yields total interest.
+ */
+export type LoanSpec =
+  | { mode: 'emi'; emi: Paise }
+  | { mode: 'principal'; principal: Paise; annualRatePct: number }
+
 export interface Loan {
   id: string
   name: string
-  principal: Paise
-  annualRatePct: number
+  spec: LoanSpec
   tenureMonths: number
   startMonth: ISOMonth
   /** Set when the loan was created to fund a goal. */
@@ -185,6 +203,8 @@ export interface ResolvedLine {
   endsMonth?: ISOMonth
   /** True when a "just this month" override is in effect. */
   overridden?: boolean
+  /** Investments only: goals may never draw on this. */
+  locked?: boolean
   /** Event label from the template version in force. */
   label?: string
 }
@@ -196,6 +216,8 @@ export interface ResolvedMonth {
   income: Paise
   expenses: Paise
   emis: Paise
+  /** Contributions to investment lines this month. */
+  investments: Paise
   surplus: Paise
 }
 
@@ -212,11 +234,18 @@ export interface ProjectedMonth {
   income: Paise
   expenses: Paise
   emis: Paise
+  investments: Paise
   surplus: Paise
   openingBalance: Paise
   closingBalance: Paise
   returns: Paise
   floor: Paise
+  /** Invested money goals are allowed to draw on. */
+  investedAvailable: Paise
+  /** Invested money goals may never touch. */
+  investedLocked: Paise
+  /** Cash + both pots. */
+  netWorth: Paise
   oneOffs: OneOff[]
   events: Array<{ label: string; categoryName: string }>
   goalsFunded: FundedGoalRef[]

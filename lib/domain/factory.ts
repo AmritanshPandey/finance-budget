@@ -29,26 +29,54 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'startMonth'> = {
   defaultViewMonths: 60,
 }
 
-interface SeedCategory {
+export interface SeedCategory {
   name: string
   kind: LineKind
   group: string
   inflatable: boolean
   /** Rent rises faster than general inflation in most Indian cities. */
   growthRatePct?: number
+  /** Investments only: goals may never draw on this. */
+  locked?: boolean
+  /** Starting amount, in rupees. */
+  rupees?: number
 }
 
-const SEED_GROUPS = ['Income', 'Living', 'Daily', 'Lifestyle'] as const
+export const SEED_GROUPS = [
+  'Income',
+  'Home',
+  'Daily',
+  'Lifestyle',
+  'Family & cover',
+  'Investments',
+] as const
 
-const SEED_CATEGORIES: SeedCategory[] = [
+export const SEED_CATEGORIES: SeedCategory[] = [
   { name: 'Salary', kind: 'income', group: 'Income', inflatable: false },
-  { name: 'Rent', kind: 'expense', group: 'Living', inflatable: false, growthRatePct: 8 },
-  { name: 'Utilities', kind: 'expense', group: 'Living', inflatable: true },
-  { name: 'Food', kind: 'expense', group: 'Daily', inflatable: true },
-  { name: 'Transport', kind: 'expense', group: 'Daily', inflatable: true },
-  { name: 'Subscriptions', kind: 'expense', group: 'Lifestyle', inflatable: false },
-  { name: 'Other', kind: 'expense', group: 'Lifestyle', inflatable: true },
+
+  { name: 'Rent', kind: 'expense', group: 'Home', inflatable: false, growthRatePct: 8, rupees: 30_000 },
+  { name: 'Maintenance, electricity and gas', kind: 'expense', group: 'Home', inflatable: true, rupees: 10_000 },
+  { name: 'House help', kind: 'expense', group: 'Home', inflatable: true, rupees: 8_500 },
+
+  { name: 'Groceries', kind: 'expense', group: 'Daily', inflatable: true, rupees: 11_000 },
+  { name: 'Commute', kind: 'expense', group: 'Daily', inflatable: true, rupees: 5_000 },
+  { name: 'Car parking', kind: 'expense', group: 'Daily', inflatable: true, rupees: 1_500 },
+  { name: 'Personal care and protein', kind: 'expense', group: 'Daily', inflatable: true, rupees: 5_000 },
+
+  { name: 'Subscriptions', kind: 'expense', group: 'Lifestyle', inflatable: false, rupees: 7_500 },
+  { name: 'Going out', kind: 'expense', group: 'Lifestyle', inflatable: true, rupees: 2_500 },
+  { name: 'Credit card', kind: 'expense', group: 'Lifestyle', inflatable: true, rupees: 13_500 },
+
+  { name: "Mom's pocket money", kind: 'expense', group: 'Family & cover', inflatable: true, rupees: 2_500 },
+  { name: 'Life insurance', kind: 'expense', group: 'Family & cover', inflatable: false, rupees: 1_100 },
+
+  // Investing is not spending. These leave the account and accumulate.
+  { name: 'ELSS', kind: 'investment', group: 'Investments', inflatable: false, rupees: 5_000 },
+  { name: 'NPS', kind: 'investment', group: 'Investments', inflatable: false, locked: true, rupees: 5_000 },
 ]
+
+/** The EMI seeded alongside the categories. Months left is asked for, not guessed. */
+export const SEED_LOAN = { name: 'Loan', rupees: 78_000, defaultMonthsLeft: 36 }
 
 export function createEmptyDoc(startMonth: ISOMonth = currentMonth()): BudgetDoc {
   const groups: CategoryGroup[] = SEED_GROUPS.map((name, order) => ({
@@ -66,6 +94,7 @@ export function createEmptyDoc(startMonth: ISOMonth = currentMonth()): BudgetDoc
     kind: seed.kind,
     order,
     inflatable: seed.inflatable,
+    ...(seed.locked ? { locked: true } : {}),
   }))
 
   const templateLines: TemplateLine[] = categories.map((category, index) => ({
@@ -74,7 +103,7 @@ export function createEmptyDoc(startMonth: ISOMonth = currentMonth()): BudgetDoc
     versions: [
       {
         from: startMonth,
-        amount: 0,
+        amount: toPaise(SEED_CATEGORIES[index].rupees ?? 0),
         growthRatePct: SEED_CATEGORIES[index].growthRatePct,
       },
     ],

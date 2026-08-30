@@ -1,15 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { isLoanActive, loanEndMonth, monthlyEMI, totalInterest } from '../loan'
+import {
+  isLoanActive,
+  loanEMI,
+  loanEndMonth,
+  monthlyEMI,
+  monthsRemaining,
+  totalInterest,
+} from '../loan'
 import { toPaise } from '../money'
 import type { Loan } from '../types'
 
 const tenLakhAt9For10Years: Loan = {
   id: 'l1',
   name: 'Education loan',
-  principal: toPaise(1_000_000),
-  annualRatePct: 9,
+  spec: { mode: 'principal', principal: toPaise(1_000_000), annualRatePct: 9 },
   tenureMonths: 120,
   startMonth: '2026-01',
+}
+
+/** What people actually know: what leaves the account, and how long is left. */
+const emiLoan: Loan = {
+  id: 'l2',
+  name: 'Loan',
+  spec: { mode: 'emi', emi: toPaise(78_000) },
+  tenureMonths: 43,
+  startMonth: '2026-08',
 }
 
 describe('EMI', () => {
@@ -26,6 +41,17 @@ describe('EMI', () => {
 
   it('reports interest paid over the life of the loan', () => {
     expect(totalInterest(tenLakhAt9For10Years)).toBeGreaterThan(toPaise(500_000))
+  })
+
+  it('takes an EMI-and-months-left loan at face value', () => {
+    expect(loanEMI(emiLoan)).toBe(toPaise(78_000))
+    expect(loanEndMonth(emiLoan)).toBe('2030-02')
+    expect(monthsRemaining(emiLoan, '2026-08')).toBe(43)
+    expect(monthsRemaining(emiLoan, '2028-08')).toBe(19)
+  })
+
+  it('will not invent an interest figure it cannot know', () => {
+    expect(totalInterest(emiLoan)).toBeNull()
   })
 })
 

@@ -61,7 +61,21 @@ export function MonthScreen() {
   }
 
   function handleAmountChange(line: ResolvedLine, amount: Paise) {
-    if (frozen || line.loanId) return
+    if (frozen) return
+
+    // An EMI is derived from the loan, so there is no plan to revise — varying
+    // it (a prepayment, a month skipped) only ever affects this one month.
+    if (line.loanId) {
+      apply((d) => setLineAmount(d, selectedMonth, line.lineId, amount, 'month'))
+      toast(`${line.categoryName} changed for ${formatMonthLabel(selectedMonth)} only`, {
+        action: {
+          label: 'Undo',
+          onClick: () => apply((d) => clearOverride(d, selectedMonth, line.lineId)),
+        },
+      })
+      return
+    }
+
     // A future month is a plan you are revising — ask what the change means.
     if (isFuture) {
       setPending({
@@ -107,6 +121,7 @@ export function MonthScreen() {
         target={doc.settings.monthlySavingTarget}
         income={resolved.income}
         expenses={resolved.expenses + resolved.emis}
+        investments={resolved.investments}
         frozen={frozen}
       />
 

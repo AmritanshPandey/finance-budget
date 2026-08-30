@@ -4,6 +4,7 @@
  * persists the result.
  */
 
+import { LOAN_CATEGORY_PREFIX } from './constants'
 import { addCategory as addCategoryToDoc } from './factory'
 import { newId } from './id'
 import { compareMonth } from './month'
@@ -43,7 +44,15 @@ export function setLineAmount(
   label?: string,
 ): BudgetDoc {
   const line = doc.templateLines.find((l) => l.id === lineId)
-  if (!line) return doc
+  // A loan line is derived, so there is no template version to write — varying
+  // an EMI (a prepayment, a month skipped) is always a single-month override.
+  if (!line) {
+    if (!lineId.startsWith(LOAN_CATEGORY_PREFIX)) return doc
+    const others = doc.overrides.filter(
+      (o) => !(o.month === month && o.lineId === lineId),
+    )
+    return { ...doc, overrides: [...others, { month, lineId, amount }] }
+  }
 
   if (scope === 'month') {
     const others = doc.overrides.filter(
@@ -158,6 +167,34 @@ export function restoreCategory(doc: BudgetDoc, categoryId: string): BudgetDoc {
         inflatable: c.inflatable,
       }
     }),
+  }
+}
+
+/** Turn a line into an investment, or back into ordinary spending. */
+export function setCategoryKind(
+  doc: BudgetDoc,
+  categoryId: string,
+  kind: LineKind,
+): BudgetDoc {
+  return {
+    ...doc,
+    categories: doc.categories.map((c) =>
+      c.id === categoryId
+        ? { ...c, kind, locked: kind === 'investment' ? c.locked : undefined }
+        : c,
+    ),
+  }
+}
+
+/** Locked investments still count as wealth, but goals may never spend them. */
+export function setCategoryLocked(
+  doc: BudgetDoc,
+  categoryId: string,
+  locked: boolean,
+): BudgetDoc {
+  return {
+    ...doc,
+    categories: doc.categories.map((c) => (c.id === categoryId ? { ...c, locked } : c)),
   }
 }
 

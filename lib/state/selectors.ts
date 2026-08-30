@@ -18,8 +18,10 @@ export interface DisplayGroup {
   name: string
   subtotal: Paise
   lines: ResolvedLine[]
-  /** The reserved loans group — derived lines, not user-editable. */
+  /** The reserved loans group — derived lines, EMI editable one month at a time. */
   derived?: boolean
+  /** Every line in the group is an investment, not spending. */
+  investing?: boolean
 }
 
 export interface MonthView {
@@ -33,13 +35,15 @@ export function buildMonthView(doc: BudgetDoc, month: ISOMonth): MonthView {
   const resolved = resolveMonth(doc, month)
 
   const income = resolved.lines.filter((l) => l.kind === 'income')
-  const expenses = resolved.lines.filter((l) => l.kind === 'expense')
+  // Investments leave the account too, so they belong in the same list —
+  // grouped separately, and totalled separately in the headline.
+  const outgoings = resolved.lines.filter((l) => l.kind !== 'income')
 
   const groupOrder = new Map(doc.groups.map((g) => [g.id, g.order]))
   const groupNames = new Map(doc.groups.map((g) => [g.id, g.name]))
 
   const byGroup = new Map<string, ResolvedLine[]>()
-  for (const line of expenses) {
+  for (const line of outgoings) {
     const list = byGroup.get(line.groupId)
     if (list) list.push(line)
     else byGroup.set(line.groupId, [line])
@@ -52,6 +56,7 @@ export function buildMonthView(doc: BudgetDoc, month: ISOMonth): MonthView {
       subtotal: lines.reduce((acc, l) => acc + l.amount, 0),
       lines,
       derived: id === LOANS_GROUP_ID,
+      investing: lines.every((l) => l.kind === 'investment'),
     }))
     .sort((a, b) => {
       // Loans always sit last — they are consequences, not choices.

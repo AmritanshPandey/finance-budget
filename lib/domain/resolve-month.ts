@@ -44,26 +44,48 @@ function totals(lines: ResolvedLine[]) {
   let income = 0
   let expenses = 0
   let emis = 0
+  let investments = 0
   for (const line of lines) {
     if (line.kind === 'income') income += line.amount
+    else if (line.kind === 'investment') investments += line.amount
     else if (line.loanId) emis += line.amount
     else expenses += line.amount
   }
-  return { income, expenses, emis, surplus: income - expenses - emis }
+  // Investing is not spending, but it does leave the account this month.
+  return {
+    income,
+    expenses,
+    emis,
+    investments,
+    surplus: income - expenses - emis - investments,
+  }
 }
 
-export function loanLine(loan: Loan, month: ISOMonth): ResolvedLine {
+export function loanLineId(loanId: string): string {
+  return `${LOAN_CATEGORY_PREFIX}${loanId}`
+}
+
+/** A loan called "Loan" should not read "Loan loan starts". */
+export function loanStartLabel(name: string): string {
+  return /loan|emi|mortgage/i.test(name) ? `${name} starts` : `${name} loan starts`
+}
+
+export function loanLine(
+  loan: Loan,
+  month: ISOMonth,
+  override?: Paise,
+): ResolvedLine {
   return {
-    lineId: `${LOAN_CATEGORY_PREFIX}${loan.id}`,
-    categoryId: `${LOAN_CATEGORY_PREFIX}${loan.id}`,
+    lineId: loanLineId(loan.id),
+    categoryId: loanLineId(loan.id),
     categoryName: loan.name,
     groupId: LOANS_GROUP_ID,
     kind: 'expense',
-    amount: loanEMI(loan),
+    amount: override ?? loanEMI(loan),
     loanId: loan.id,
     endsMonth: loanEndMonth(loan),
-    label:
-      monthsBetween(loan.startMonth, month) === 0 ? `${loan.name} loan starts` : undefined,
+    overridden: override !== undefined,
+    label: monthsBetween(loan.startMonth, month) === 0 ? loanStartLabel(loan.name) : undefined,
   }
 }
 
@@ -130,12 +152,18 @@ export function resolveMonth(
       kind: category.kind,
       amount,
       overridden: Boolean(override),
+      locked: category.locked,
       label: version.from === month ? version.label : undefined,
     })
   }
 
   for (const loan of loans) {
-    if (isLoanActive(loan, month)) lines.push(loanLine(loan, month))
+    if (!isLoanActive(loan, month)) continue
+    // An EMI can be varied for one month — a prepayment, or a month skipped.
+    const override = doc.overrides.find(
+      (o) => o.month === month && o.lineId === loanLineId(loan.id),
+    )
+    lines.push(loanLine(loan, month, override?.amount))
   }
 
   return { month, frozen: false, lines, ...totals(lines) }
