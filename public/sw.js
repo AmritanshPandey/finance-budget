@@ -10,12 +10,66 @@
  * a fallback when there is no connection.
  */
 
-const VERSION = 'v1'
+const VERSION = 'v2'
 const ASSETS = `budget-assets-${VERSION}`
 const PAGES = `budget-pages-${VERSION}`
 
-self.addEventListener('install', () => {
-  self.skipWaiting()
+/** Routes worth having available with no network. */
+const SHELL_ROUTES = ['/', '/budget', '/analytics', '/goals', '/setup', '/onboarding']
+
+/**
+ * Precache the shell during install.
+ *
+ * A service worker only starts intercepting *after* it activates, so on a first
+ * visit every script and stylesheet has already been fetched past it. Without
+ * this the app is only offline-capable from the second visit onwards — which is
+ * exactly when someone would least expect it to fail.
+ *
+ * Build assets are content-hashed and so cannot be listed here; they are read
+ * out of the served HTML instead.
+ */
+async function precache() {
+  const pages = await caches.open(PAGES)
+  const assets = await caches.open(ASSETS)
+
+  const documents = await Promise.all(
+    SHELL_ROUTES.map(async (route) => {
+      try {
+        const response = await fetch(route, { cache: 'reload' })
+        if (!isCacheable(response)) return null
+        await pages.put(route, response.clone())
+        return response.text()
+      } catch {
+        return null
+      }
+    }),
+  )
+
+  const urls = new Set()
+  for (const html of documents) {
+    if (!html) continue
+    for (const match of html.matchAll(/\/_next\/static\/[^"'\\\s>]+/g)) {
+      urls.add(match[0])
+    }
+  }
+  for (const icon of ['/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png']) {
+    urls.add(icon)
+  }
+
+  await Promise.all(
+    [...urls].map(async (url) => {
+      try {
+        const response = await fetch(url, { cache: 'reload' })
+        if (isCacheable(response)) await assets.put(url, response.clone())
+      } catch {
+        // One missing asset should not fail the whole install.
+      }
+    }),
+  )
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(precache().finally(() => self.skipWaiting()))
 })
 
 self.addEventListener('activate', (event) => {
