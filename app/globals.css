@@ -1,0 +1,198 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Money states. Never decorative — only surplus, near-target and deficit. */
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* Warm off-white — paper, not screen. */
+  --background: oklch(0.988 0.003 95);
+  --foreground: oklch(0.19 0.012 275);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+
+  /* One accent, used only for the thing you are meant to look at. */
+  --primary: oklch(0.53 0.185 278);
+  --primary-foreground: oklch(0.99 0.005 280);
+
+  --secondary: oklch(0.962 0.004 280);
+  --secondary-foreground: oklch(0.27 0.02 278);
+  --muted: oklch(0.965 0.004 280);
+  --muted-foreground: oklch(0.505 0.018 278);
+  --accent: oklch(0.955 0.012 280);
+  --accent-foreground: oklch(0.32 0.05 278);
+
+  --destructive: oklch(0.585 0.205 25);
+  --border: oklch(0.915 0.006 280);
+  --input: oklch(0.905 0.008 280);
+  --ring: oklch(0.53 0.185 278);
+
+  --positive: oklch(0.545 0.135 158);
+  --positive-soft: oklch(0.945 0.04 158);
+  --warn: oklch(0.62 0.135 72);
+  --warn-soft: oklch(0.955 0.045 78);
+  --negative: oklch(0.565 0.195 25);
+  --negative-soft: oklch(0.955 0.03 25);
+
+  --chart-1: oklch(0.53 0.185 278);
+  --chart-2: oklch(0.66 0.13 262);
+  --chart-3: oklch(0.75 0.09 250);
+  --chart-4: oklch(0.83 0.06 245);
+  --chart-5: oklch(0.9 0.035 250);
+}
+
+.dark {
+  --background: oklch(0.165 0.014 278);
+  --foreground: oklch(0.955 0.006 280);
+
+  --card: oklch(0.212 0.016 278);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.226 0.017 278);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.72 0.155 280);
+  --primary-foreground: oklch(0.17 0.03 278);
+
+  --secondary: oklch(0.268 0.018 278);
+  --secondary-foreground: oklch(0.955 0.006 280);
+  --muted: oklch(0.262 0.016 278);
+  --muted-foreground: oklch(0.715 0.018 280);
+  --accent: oklch(0.295 0.028 280);
+  --accent-foreground: oklch(0.955 0.006 280);
+
+  --destructive: oklch(0.7 0.18 24);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.72 0.155 280);
+
+  --positive: oklch(0.75 0.15 158);
+  --positive-soft: oklch(0.32 0.06 158);
+  --warn: oklch(0.79 0.14 78);
+  --warn-soft: oklch(0.34 0.06 78);
+  --negative: oklch(0.71 0.175 25);
+  --negative-soft: oklch(0.33 0.08 25);
+
+  --chart-1: oklch(0.72 0.155 280);
+  --chart-2: oklch(0.63 0.13 265);
+  --chart-3: oklch(0.53 0.1 258);
+  --chart-4: oklch(0.43 0.07 255);
+  --chart-5: oklch(0.34 0.045 258);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Money must never jitter while you type over it. */
+  input[inputmode="decimal"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* The figures are the typography: large, tight, confident. */
+@utility num-xl {
+  @apply text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.03em] tnum;
+}
+@utility num-lg {
+  @apply text-2xl leading-tight font-semibold tracking-[-0.02em] tnum;
+}
+@utility num-md {
+  @apply text-base font-medium tracking-[-0.01em] tnum;
+}
+@utility label-xs {
+  @apply text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground;
+}
+
+/* Safe-area padding so the sticky bars clear the iOS home indicator. */
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+
+/* Motion only for consequence. */
+@keyframes impact-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-impact {
+  animation: impact-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-impact {
+    animation: none;
+  }
+}

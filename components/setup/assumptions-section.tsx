@@ -1,0 +1,144 @@
+'use client'
+
+import { RupeeField } from '@/components/rupee-field'
+import { Section } from '@/components/setup/section'
+import { updateSettings } from '@/lib/domain/mutations'
+import { useBudget } from '@/lib/state/store'
+import type { BudgetDoc } from '@/lib/domain/types'
+import { cn } from '@/lib/utils'
+
+export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
+  const apply = useBudget((s) => s.apply)
+  const { settings } = doc
+
+  return (
+    <Section
+      title="Assumptions"
+      caption="The few numbers the forecast leans on. Rough is fine."
+    >
+      <div className="space-y-6">
+        <RupeeField
+          label="Monthly saving target"
+          hint="What you want left over each month. Only a marker to aim at."
+          value={settings.monthlySavingTarget}
+          onChange={(monthlySavingTarget) =>
+            apply((d) => updateSettings(d, { monthlySavingTarget }))
+          }
+        />
+
+        <PercentField
+          label="Prices rise by"
+          hint="Applied each year to everyday spending like food and transport."
+          value={settings.inflationRatePct}
+          onChange={(inflationRatePct) => apply((d) => updateSettings(d, { inflationRatePct }))}
+        />
+
+        <PercentField
+          label="Pay rises by"
+          hint="Applied to income each year. Set it to 0 to assume no raises."
+          value={settings.incomeGrowthRatePct}
+          onChange={(incomeGrowthRatePct) =>
+            apply((d) => updateSettings(d, { incomeGrowthRatePct }))
+          }
+        />
+
+        <PercentField
+          label="Savings grow by"
+          hint="One number for everything you hold. Not a portfolio."
+          value={settings.expectedAnnualReturnPct}
+          onChange={(expectedAnnualReturnPct) =>
+            apply((d) => updateSettings(d, { expectedAnnualReturnPct }))
+          }
+        />
+
+        <div>
+          <p className="label-xs">Never spend below</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            A floor your goals are not allowed to cross.
+          </p>
+          <div className="mt-3 flex rounded-lg bg-muted p-0.5">
+            {(['monthsOfExpenses', 'fixed'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() =>
+                  apply((d) =>
+                    updateSettings(d, {
+                      safetyFloor:
+                        mode === 'fixed'
+                          ? { mode: 'fixed', amount: 100_000_00 }
+                          : { mode: 'monthsOfExpenses', months: 3 },
+                    }),
+                  )
+                }
+                className={cn(
+                  'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  settings.safetyFloor.mode === mode
+                    ? 'bg-card shadow-sm'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {mode === 'fixed' ? 'A fixed amount' : 'Months of spending'}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            {settings.safetyFloor.mode === 'fixed' ? (
+              <RupeeField
+                label="Keep at least"
+                value={settings.safetyFloor.amount}
+                onChange={(amount) =>
+                  apply((d) => updateSettings(d, { safetyFloor: { mode: 'fixed', amount } }))
+                }
+              />
+            ) : (
+              <PercentField
+                label="Months of spending to keep"
+                unit="months"
+                value={settings.safetyFloor.months}
+                onChange={(months) =>
+                  apply((d) =>
+                    updateSettings(d, { safetyFloor: { mode: 'monthsOfExpenses', months } }),
+                  )
+                }
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </Section>
+  )
+}
+
+export function PercentField({
+  label,
+  hint,
+  value,
+  onChange,
+  unit = '%',
+}: {
+  label: string
+  hint?: string
+  value: number
+  onChange: (next: number) => void
+  unit?: string
+}) {
+  return (
+    <label className="block">
+      <span className="label-xs">{label}</span>
+      <div className="mt-1.5 flex items-baseline gap-1 border-b-2 pb-1 focus-within:border-primary">
+        <input
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => {
+            const next = Number(e.target.value)
+            if (Number.isFinite(next)) onChange(next)
+          }}
+          className="w-full bg-transparent num-lg outline-none"
+        />
+        <span className="text-sm text-muted-foreground">{unit}</span>
+      </div>
+      {hint && <span className="mt-1.5 block text-xs text-muted-foreground">{hint}</span>}
+    </label>
+  )
+}
