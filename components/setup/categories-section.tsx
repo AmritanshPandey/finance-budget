@@ -11,10 +11,14 @@ import {
   moveCategoryToGroup,
   renameCategory,
   renameGroup,
+  lineForCategory,
   restoreCategory,
   setCategoryKind,
   setCategoryLocked,
+  setLineGrowthRate,
 } from '@/lib/domain/mutations'
+import { currentMonth } from '@/lib/domain/month'
+import { versionInForce } from '@/lib/domain/resolve-month'
 import { useBudget } from '@/lib/state/store'
 import type { BudgetDoc, Category, LineKind } from '@/lib/domain/types'
 import { cn } from '@/lib/utils'
@@ -117,6 +121,15 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
   const apply = useBudget((s) => s.apply)
   const groups = [...doc.groups].sort((a, b) => a.order - b.order)
   const investing = category.kind === 'investment'
+  const line = lineForCategory(doc, category.id)
+  const active = line ? versionInForce(line.versions, currentMonth()) : null
+  const growthRate =
+    active?.growthRatePct ??
+    (category.kind === 'income'
+      ? doc.settings.incomeGrowthRatePct
+      : category.inflatable
+        ? doc.settings.inflationRatePct
+        : 0)
 
   return (
     <li className="rounded-lg border border-transparent px-0.5 py-1 hover:border-border">
@@ -138,51 +151,70 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
         </button>
       </div>
 
-      {category.kind !== 'income' && (
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-1">
-          <select
-            value={category.groupId}
-            aria-label={`Move ${category.name} to another group`}
-            onChange={(e) => apply((d) => moveCategoryToGroup(d, category.id, e.target.value))}
-            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
-          >
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Investing is not spending: the money leaves your account but stays yours. */}
-          <select
-            value={category.kind}
-            aria-label={`Is ${category.name} spending or investing?`}
-            onChange={(e) =>
-              apply((d) => setCategoryKind(d, category.id, e.target.value as LineKind))
-            }
-            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
-          >
-            <option value="expense">Spending</option>
-            <option value="investment">Investing</option>
-          </select>
-
-          {investing && (
-            <button
-              onClick={() => apply((d) => setCategoryLocked(d, category.id, !category.locked))}
-              aria-pressed={Boolean(category.locked)}
-              className={cn(
-                'flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs transition-colors',
-                category.locked
-                  ? 'border-warn/40 bg-warn-soft text-warn'
-                  : 'bg-background text-muted-foreground hover:bg-accent',
-              )}
+      <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-1">
+        {category.kind !== 'income' && (
+          <>
+            <select
+              value={category.groupId}
+              aria-label={`Move ${category.name} to another group`}
+              onChange={(e) => apply((d) => moveCategoryToGroup(d, category.id, e.target.value))}
+              className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
             >
-              {category.locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
-              {category.locked ? 'Locked away' : 'Goals can use it'}
-            </button>
-          )}
-        </div>
-      )}
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Investing is not spending: the money leaves your account but stays yours. */}
+            <select
+              value={category.kind}
+              aria-label={`Is ${category.name} spending or investing?`}
+              onChange={(e) =>
+                apply((d) => setCategoryKind(d, category.id, e.target.value as LineKind))
+              }
+              className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+            >
+              <option value="expense">Spending</option>
+              <option value="investment">Investing</option>
+            </select>
+          </>
+        )}
+
+        {/* The cadence chosen during onboarding stays editable here. */}
+        <label className="flex items-center gap-1 rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground">
+          <input
+            inputMode="decimal"
+            aria-label={`Yearly change for ${category.name}`}
+            value={growthRate}
+            disabled={!line}
+            onChange={(e) => {
+              const next = Number(e.target.value)
+              if (!Number.isFinite(next) || !line) return
+              apply((d) => setLineGrowthRate(d, line.id, currentMonth(), next))
+            }}
+            className="w-8 bg-transparent text-right tnum outline-none"
+          />
+          % a year
+        </label>
+
+        {investing && (
+          <button
+            onClick={() => apply((d) => setCategoryLocked(d, category.id, !category.locked))}
+            aria-pressed={Boolean(category.locked)}
+            className={cn(
+              'flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs transition-colors',
+              category.locked
+                ? 'border-warn/40 bg-warn-soft text-warn'
+                : 'bg-background text-muted-foreground hover:bg-accent',
+            )}
+          >
+            {category.locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
+            {category.locked ? 'Locked away' : 'Goals can use it'}
+          </button>
+        )}
+      </div>
     </li>
   )
 }

@@ -2,6 +2,7 @@
 
 import { RupeeField } from '@/components/rupee-field'
 import { Section } from '@/components/setup/section'
+import { addMonths, formatMonthLabel } from '@/lib/domain/month'
 import { updateSettings } from '@/lib/domain/mutations'
 import { useBudget } from '@/lib/state/store'
 import type { BudgetDoc } from '@/lib/domain/types'
@@ -17,6 +18,37 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
       caption="The few numbers the forecast leans on. Rough is fine."
     >
       <div className="space-y-6">
+        <div>
+          <p className="label-xs">How far ahead you plan</p>
+          <div className="mt-2 flex rounded-lg bg-muted p-0.5">
+            {[3, 5, 10].map((years) => (
+              <button
+                key={years}
+                onClick={() =>
+                  apply((d) =>
+                    updateSettings(d, {
+                      horizonMonths: years * 12,
+                      defaultViewMonths: Math.min(60, years * 12),
+                    }),
+                  )
+                }
+                className={cn(
+                  'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  settings.horizonMonths === years * 12
+                    ? 'bg-card shadow-sm'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {years} years
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            The forecast runs to{' '}
+            {formatMonthLabel(addMonths(settings.startMonth, settings.horizonMonths - 1))}.
+          </p>
+        </div>
+
         <RupeeField
           label="Monthly saving target"
           hint="What you want left over each month. Only a marker to aim at."

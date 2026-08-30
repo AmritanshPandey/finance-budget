@@ -29,11 +29,17 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'startMonth'> = {
   defaultViewMonths: 60,
 }
 
+/** Which onboarding step a seeded line is asked about. */
+export type SeedStep = 'income' | 'home' | 'fixed' | 'living' | 'investments'
+
 export interface SeedCategory {
   name: string
   kind: LineKind
   group: string
+  step: SeedStep
   inflatable: boolean
+  /** Starting cadence: 0 holds steady, a number climbs that much each year. */
+  defaultGrowthPct: number
   /** Rent rises faster than general inflation in most Indian cities. */
   growthRatePct?: number
   /** Investments only: goals may never draw on this. */
@@ -52,27 +58,26 @@ export const SEED_GROUPS = [
 ] as const
 
 export const SEED_CATEGORIES: SeedCategory[] = [
-  { name: 'Salary', kind: 'income', group: 'Income', inflatable: false },
+  { name: 'Salary', kind: 'income', group: 'Income', step: 'income', inflatable: false, defaultGrowthPct: 5 },
 
-  { name: 'Rent', kind: 'expense', group: 'Home', inflatable: false, growthRatePct: 8, rupees: 30_000 },
-  { name: 'Maintenance, electricity and gas', kind: 'expense', group: 'Home', inflatable: true, rupees: 10_000 },
-  { name: 'House help', kind: 'expense', group: 'Home', inflatable: true, rupees: 8_500 },
+  { name: 'Rent', kind: 'expense', group: 'Home', step: 'home', inflatable: false, growthRatePct: 8, defaultGrowthPct: 8, rupees: 30_000 },
+  { name: 'Maintenance, electricity and gas', kind: 'expense', group: 'Home', step: 'home', inflatable: true, defaultGrowthPct: 6, rupees: 10_000 },
+  { name: 'House help', kind: 'expense', group: 'Home', step: 'home', inflatable: true, defaultGrowthPct: 6, rupees: 8_500 },
 
-  { name: 'Groceries', kind: 'expense', group: 'Daily', inflatable: true, rupees: 11_000 },
-  { name: 'Commute', kind: 'expense', group: 'Daily', inflatable: true, rupees: 5_000 },
-  { name: 'Car parking', kind: 'expense', group: 'Daily', inflatable: true, rupees: 1_500 },
-  { name: 'Personal care and protein', kind: 'expense', group: 'Daily', inflatable: true, rupees: 5_000 },
+  { name: 'Subscriptions', kind: 'expense', group: 'Lifestyle', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 7_500 },
+  { name: 'Life insurance', kind: 'expense', group: 'Family & cover', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 1_100 },
+  { name: "Mom's pocket money", kind: 'expense', group: 'Family & cover', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 2_500 },
+  { name: 'Car parking', kind: 'expense', group: 'Daily', step: 'fixed', inflatable: false, defaultGrowthPct: 0, rupees: 1_500 },
 
-  { name: 'Subscriptions', kind: 'expense', group: 'Lifestyle', inflatable: false, rupees: 7_500 },
-  { name: 'Going out', kind: 'expense', group: 'Lifestyle', inflatable: true, rupees: 2_500 },
-  { name: 'Credit card', kind: 'expense', group: 'Lifestyle', inflatable: true, rupees: 13_500 },
-
-  { name: "Mom's pocket money", kind: 'expense', group: 'Family & cover', inflatable: true, rupees: 2_500 },
-  { name: 'Life insurance', kind: 'expense', group: 'Family & cover', inflatable: false, rupees: 1_100 },
+  { name: 'Groceries', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 11_000 },
+  { name: 'Commute', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 5_000 },
+  { name: 'Personal care and protein', kind: 'expense', group: 'Daily', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 5_000 },
+  { name: 'Going out', kind: 'expense', group: 'Lifestyle', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 2_500 },
+  { name: 'Credit card', kind: 'expense', group: 'Lifestyle', step: 'living', inflatable: true, defaultGrowthPct: 6, rupees: 13_500 },
 
   // Investing is not spending. These leave the account and accumulate.
-  { name: 'ELSS', kind: 'investment', group: 'Investments', inflatable: false, rupees: 5_000 },
-  { name: 'NPS', kind: 'investment', group: 'Investments', inflatable: false, locked: true, rupees: 5_000 },
+  { name: 'ELSS', kind: 'investment', group: 'Investments', step: 'investments', inflatable: false, defaultGrowthPct: 0, rupees: 5_000 },
+  { name: 'NPS', kind: 'investment', group: 'Investments', step: 'investments', inflatable: false, locked: true, defaultGrowthPct: 0, rupees: 5_000 },
 ]
 
 /** The EMI seeded alongside the categories. Months left is asked for, not guessed. */
@@ -161,6 +166,26 @@ export function addCategory(
     ...doc,
     categories: [...doc.categories, category],
     templateLines: [...doc.templateLines, line],
+  }
+}
+
+/**
+ * Replace a line's whole version history. This is how onboarding records a
+ * cadence: one version for "holds steady" or "climbs each year", two when the
+ * amount is known to change on a date.
+ */
+export function setLineVersionsByName(
+  doc: BudgetDoc,
+  categoryName: string,
+  versions: TemplateLine['versions'],
+): BudgetDoc {
+  const category = doc.categories.find((c) => c.name === categoryName)
+  if (!category) return doc
+  return {
+    ...doc,
+    templateLines: doc.templateLines.map((line) =>
+      line.categoryId === category.id ? { ...line, versions } : line,
+    ),
   }
 }
 

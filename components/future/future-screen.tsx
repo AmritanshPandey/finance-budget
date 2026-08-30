@@ -13,20 +13,25 @@ import { useUi } from '@/lib/state/ui-store'
 import { cn } from '@/lib/utils'
 import type { GoalOutcome, ProjectedMonth } from '@/lib/domain/types'
 
-const RANGES = [
-  { label: '1y', months: 12 },
-  { label: '5y', months: 60 },
-  { label: '10y', months: 120 },
-]
+/** Only offer spans the plan actually reaches. */
+function rangesFor(horizonMonths: number) {
+  const candidates = [12, 36, 60, 120].filter((m) => m < horizonMonths)
+  return [...candidates, horizonMonths].map((months) => ({
+    months,
+    label: `${Math.round(months / 12)}y`,
+  }))
+}
 
 export function FutureScreen() {
   const projection = useBudget((s) => s.projection)
+  const horizonMonths = useBudget((s) => s.doc?.settings.horizonMonths ?? 120)
   const rangeMonths = useUi((s) => s.rangeMonths)
   const setRangeMonths = useUi((s) => s.setRangeMonths)
+  const ranges = useMemo(() => rangesFor(horizonMonths), [horizonMonths])
 
   const months = useMemo(
-    () => projection?.months.slice(0, rangeMonths) ?? [],
-    [projection, rangeMonths],
+    () => projection?.months.slice(0, Math.min(rangeMonths, horizonMonths)) ?? [],
+    [projection, rangeMonths, horizonMonths],
   )
   const rows = useMemo(() => buildRows(months), [months])
 
@@ -49,9 +54,9 @@ export function FutureScreen() {
           <p className="text-xs text-muted-foreground">Scroll down to go forward</p>
         </div>
         <div className="flex rounded-lg bg-muted p-0.5">
-          {RANGES.map((range) => (
+          {ranges.map((range) => (
             <button
-              key={range.label}
+              key={range.months}
               onClick={() => setRangeMonths(range.months)}
               className={cn(
                 'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
