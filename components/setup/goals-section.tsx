@@ -66,6 +66,8 @@ export function GoalsSection({ doc }: { doc: BudgetDoc }) {
       targetAmount: next.targetAmount,
       targetMonth: next.targetMonth,
       funding: next.funding,
+      amountIn: next.amountIn,
+      inflationClass: next.inflationClass,
       downPayment: next.funding === 'savings' ? undefined : next.downPayment,
       loanTerms:
         next.funding === 'savings'

@@ -14,12 +14,15 @@ import {
   lineForCategory,
   restoreCategory,
   setCategoryDueDay,
+  setCategoryInflationClass,
+  setCategoryInvestmentType,
   setCategoryKind,
   setCategoryLocked,
   setLinePlan,
 } from '@/lib/domain/mutations'
 import { PlanControl } from '@/components/plan-control'
 import { planFromVersions } from '@/lib/domain/plan'
+import { INFLATION_CLASSES, INVESTMENT_TYPES } from '@/lib/domain/rates'
 import { useBudget } from '@/lib/state/store'
 import type { BudgetDoc, Category, LineKind } from '@/lib/domain/types'
 import { cn } from '@/lib/utils'
@@ -34,7 +37,7 @@ export function CategoriesSection({ doc }: { doc: BudgetDoc }) {
   return (
     <Section
       title="Categories"
-      caption="Rename anything, move it anywhere, mark it as investing. Past months keep the old names."
+      caption="Rename anything, move it anywhere, say what it is. Rates only apply once you name something."
     >
       <div className="space-y-5">
         {groups.map((group) => {
@@ -174,6 +177,43 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
               <option value="investment">Investing</option>
             </select>
           </>
+        )}
+
+        {/* Naming what a line is turns its rate on — nothing before that. */}
+        {category.kind === 'expense' && (
+          <select
+            value={category.inflationClass ?? 'none'}
+            aria-label={`How ${category.name} rises over time`}
+            onChange={(e) =>
+              apply((d) => setCategoryInflationClass(d, category.id, e.target.value))
+            }
+            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+          >
+            {INFLATION_CLASSES.map((preset) => (
+              <option key={preset.key} value={preset.key}>
+                {preset.label}
+                {preset.ratePct > 0 ? ` · ${preset.ratePct}%` : ''}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {investing && (
+          <select
+            value={category.investmentType ?? 'none'}
+            aria-label={`What ${category.name} is held in`}
+            onChange={(e) =>
+              apply((d) => setCategoryInvestmentType(d, category.id, e.target.value))
+            }
+            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+          >
+            {INVESTMENT_TYPES.map((preset) => (
+              <option key={preset.key} value={preset.key}>
+                {preset.label}
+                {preset.ratePct > 0 ? ` · ${preset.ratePct}%` : ''}
+              </option>
+            ))}
+          </select>
         )}
 
         {/* A due day is what puts a bill on the overview. */}

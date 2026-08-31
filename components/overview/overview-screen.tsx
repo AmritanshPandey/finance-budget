@@ -9,7 +9,7 @@ import { QuickAddDrawer } from '@/components/transactions/quick-add-drawer'
 import { monthActuals, recentTransactions } from '@/lib/domain/actuals'
 import { describeOutcome } from '@/lib/domain/goals'
 import { loanEMI } from '@/lib/domain/loan'
-import { currentMonth, formatMonthLabel } from '@/lib/domain/month'
+import { currentMonth, formatMonthLabel, maxMonth } from '@/lib/domain/month'
 import { formatCompactINR, formatINR } from '@/lib/domain/money'
 import { projectedMonth } from '@/lib/domain/projection'
 import { resolveMonth } from '@/lib/domain/resolve-month'
@@ -22,7 +22,8 @@ export function OverviewScreen() {
   const projection = useBudget((s) => s.projection)
   const [adding, setAdding] = useState(false)
 
-  const month = currentMonth()
+  // A plan may start in the future; reading today's month would show all zeroes.
+  const month = doc ? maxMonth(currentMonth(), doc.settings.startMonth) : currentMonth()
   const view = useMemo(() => (doc ? resolveMonth(doc, month) : null), [doc, month])
   const actual = useMemo(() => (doc ? monthActuals(doc, month) : null), [doc, month])
   const recent = useMemo(() => (doc ? recentTransactions(doc, 6) : []), [doc])
@@ -137,7 +138,8 @@ export function OverviewScreen() {
 /** Categories carrying a due day, plus the loans, whichever lands soonest. */
 function BillsDueCard({ doc }: { doc: BudgetDoc }) {
   const today = new Date()
-  const month = currentMonth()
+  // A plan may start in the future; reading today's month would show all zeroes.
+  const month = doc ? maxMonth(currentMonth(), doc.settings.startMonth) : currentMonth()
   const view = resolveMonth(doc, month)
 
   const dated = doc.categories

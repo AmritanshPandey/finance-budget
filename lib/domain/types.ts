@@ -46,6 +46,12 @@ export interface Category {
   color?: string
   /** Day of the month this falls due, 1–31. Drives "Bills due soon". */
   dueDay?: number
+  /** Expenses: which standard inflation class this line follows. */
+  inflationClass?: string
+  /** Investments: what it is held in, which sets the return it compounds at. */
+  investmentType?: string
+  /** Overrides the type's standard return for this line only. */
+  returnRatePctOverride?: number
   /** Archived, never deleted — historical months must still resolve it. */
   archivedAt?: ISODate
 }
@@ -132,6 +138,13 @@ export interface Goal {
   loanTerms?: { annualRatePct: number; tenureMonths: number }
   /** Free text, e.g. "$40,000 @ ₹88". No FX engine. */
   conversionNote?: string
+  /**
+   * Whether `targetAmount` is what it costs today or what it will cost then.
+   * Defaults to today's money, which is how people actually think.
+   */
+  amountIn?: 'today' | 'future'
+  /** Which inflation class prices this goal, when the amount is in today's money. */
+  inflationClass?: string
   status: GoalStatus
 }
 
@@ -280,6 +293,10 @@ export interface ProjectedMonth {
   investedAvailable: Paise
   /** Invested money goals may never touch. */
   investedLocked: Paise
+  /** Each investment pot by category, so the breakdown can be shown. */
+  pots: Record<string, Paise>
+  /** Contributions so far, so growth can be separated from what was put in. */
+  contributed: Record<string, Paise>
   /** Cash + both pots. */
   netWorth: Paise
   oneOffs: OneOff[]
@@ -294,7 +311,10 @@ export interface GoalOutcome {
   name: string
   emoji?: string
   targetMonth: ISOMonth
+  /** What the user typed. */
   targetAmount: Paise
+  /** What it is projected to actually cost by then. */
+  requiredAmount: Paise
   fundedMonth: ISOMonth | null
   /** Months past the target date. 0 when on time. */
   slipMonths: number

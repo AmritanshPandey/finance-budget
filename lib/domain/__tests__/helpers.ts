@@ -65,12 +65,15 @@ export function investing(
   categoryName: string,
   rupees: number,
   locked = false,
+  investmentType?: string,
 ): BudgetDoc {
   const next = setAmountByName(doc, categoryName, rupees)
   return {
     ...next,
     categories: next.categories.map((c) =>
-      c.name === categoryName ? { ...c, kind: 'investment' as const, locked } : c,
+      c.name === categoryName
+        ? { ...c, kind: 'investment' as const, locked, ...(investmentType ? { investmentType } : {}) }
+        : c,
     ),
   }
 }

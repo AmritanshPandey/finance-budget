@@ -3,6 +3,12 @@
 import { useMemo } from 'react'
 import { IconTrendingDown, IconTrendingUp } from '@tabler/icons-react'
 
+import {
+  CostCard,
+  InvestmentsCard,
+  LoansCard,
+  SavingsCard,
+} from '@/components/analytics/summaries'
 import { AreaTrend, type TrendPoint } from '@/components/charts/area-trend'
 import { Donut, type DonutSlice } from '@/components/charts/donut'
 import { monthActuals } from '@/lib/domain/actuals'
@@ -11,6 +17,7 @@ import {
   compareMonth,
   currentMonth,
   formatMonthShort,
+  maxMonth,
   monthsBetween,
 } from '@/lib/domain/month'
 import { formatCompactINR, formatINR } from '@/lib/domain/money'
@@ -36,7 +43,8 @@ function spendFor(doc: BudgetDoc, month: ISOMonth, now: ISOMonth): Paise {
 
 export function AnalyticsScreen() {
   const doc = useBudget((s) => s.doc)
-  const now = currentMonth()
+  // A plan may start in the future; reading today's month would show all zeroes.
+  const now = doc ? maxMonth(currentMonth(), doc.settings.startMonth) : currentMonth()
 
   const months = useMemo(() => {
     if (!doc) return []
@@ -57,6 +65,8 @@ export function AnalyticsScreen() {
     if (!doc) return []
     const view = resolveMonth(doc, now)
     const previous = addMonths(now, -1)
+    // Nothing existed before the plan began, so a delta against it is noise.
+    const comparable = compareMonth(previous, doc.settings.startMonth) >= 0
     const actualNow = monthActuals(doc, now)
     const actualPrev = monthActuals(doc, previous)
     const prevView = resolveMonth(doc, previous)
@@ -94,7 +104,7 @@ export function AnalyticsScreen() {
           id: group.id,
           name: group.name,
           value,
-          delta: value - before,
+          delta: comparable ? value - before : null,
           planned: plannedNow,
           // The group takes its colour from the line it spends most on.
           color: biggest?.color ?? 'slate',
@@ -148,7 +158,7 @@ export function AnalyticsScreen() {
       >
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold">Overall spending</h2>
-          {lastMonth > 0 && (
+          {lastMonth > 0 && points.length > 1 && (
             <span className="flex shrink-0 items-center gap-1 rounded-full bg-background/85 px-2.5 py-1 text-xs font-semibold text-foreground">
               {down ? (
                 <IconTrendingDown size={13} stroke={2.4} className="text-positive" />
@@ -196,7 +206,7 @@ export function AnalyticsScreen() {
                 />
               </div>
               <span className="shrink-0 text-xs font-semibold tnum">
-                {group.delta === 0
+                {group.delta === null || group.delta === 0
                   ? '—'
                   : `${group.delta > 0 ? '+' : '−'}${formatCompactINR(Math.abs(group.delta))}`}
               </span>
@@ -236,6 +246,16 @@ export function AnalyticsScreen() {
           </div>
         )}
       </section>
+
+      <InvestmentsCard doc={doc} />
+      <LoansCard doc={doc} />
+      <SavingsCard doc={doc} />
+      <CostCard doc={doc} />
+
+      <p className="mt-4 px-1 text-xs leading-relaxed text-muted-foreground">
+        Growth and inflation figures come from long-run averages, and are assumptions rather than
+        forecasts. Change any of them per line in Setup.
+      </p>
     </div>
   )
 }

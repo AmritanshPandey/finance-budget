@@ -23,6 +23,7 @@ interface Line {
   group: string
   kind?: LineKind
   locked?: boolean
+  investmentType?: string
   dueDay?: number
   plan: LinePlan
 }
@@ -79,21 +80,24 @@ export const LINES: Line[] = [
   },
   { name: 'Life insurance', group: 'Family & cover', plan: plan([[P1, 1_100]]) },
 
-  { name: 'ELSS', group: 'Investments', kind: 'investment', plan: plan([[P1, 5_000]]) },
+  { name: 'ELSS', group: 'Investments', kind: 'investment', investmentType: 'elss', plan: plan([[P1, 5_000]]) },
   {
     name: 'NPS',
     group: 'Investments',
     kind: 'investment',
     locked: true,
+    investmentType: 'nps',
     plan: plan([[P1, 5_000], [P3, 5_500]]),
   },
   {
     name: 'Emergency fund',
     group: 'Investments',
     kind: 'investment',
+    // Reachable in a hurry, which is the whole point of it.
+    investmentType: 'fd',
     plan: plan([[P3, 50_000]]),
   },
-  { name: 'Cash', group: 'Investments', kind: 'investment', plan: plan([[P3, 15_000]]) },
+  { name: 'Cash', group: 'Investments', kind: 'investment', investmentType: 'savings', plan: plan([[P3, 15_000]]) },
 ]
 
 /**
@@ -140,6 +144,7 @@ export function buildRealPlan(): BudgetDoc {
     inflatable: false,
     ...inferLook(line.name),
     ...(line.locked ? { locked: true } : {}),
+    ...(line.investmentType ? { investmentType: line.investmentType } : {}),
     ...(line.dueDay ? { dueDay: line.dueDay } : {}),
   }))
 

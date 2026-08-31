@@ -89,6 +89,27 @@ describe('the set-asides are savings, not spending', () => {
   })
 })
 
+describe('the investments are named', () => {
+  it('each carries the instrument it is held in', () => {
+    const typed = Object.fromEntries(
+      doc.categories.filter((c) => c.kind === 'investment').map((c) => [c.name, c.investmentType]),
+    )
+    expect(typed).toEqual({
+      ELSS: 'elss',
+      NPS: 'nps',
+      'Emergency fund': 'fd',
+      Cash: 'savings',
+    })
+  })
+
+  it('leaves every expense flat, as the spreadsheet has them', () => {
+    const inflating = doc.categories.filter(
+      (c) => c.kind === 'expense' && c.inflationClass && c.inflationClass !== 'none',
+    )
+    expect(inflating).toEqual([])
+  })
+})
+
 describe('the plan is legible as a schedule', () => {
   it('lists every step, not just the last of each line', () => {
     const changes = scheduledChanges(doc, '2026-10')

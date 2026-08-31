@@ -7,6 +7,7 @@
 import { LOAN_CATEGORY_PREFIX } from './constants'
 import { normaliseMerchant } from './actuals'
 import { planToVersions, type LinePlan } from './plan'
+import { LOCKED_BY_DEFAULT, inflationClass } from './rates'
 import { inferLook } from './look'
 import { addCategory as addCategoryToDoc } from './factory'
 import { newId } from './id'
@@ -257,6 +258,65 @@ export function setCategoryLocked(
   return {
     ...doc,
     categories: doc.categories.map((c) => (c.id === categoryId ? { ...c, locked } : c)),
+  }
+}
+
+/**
+ * Naming what a line is turns its rate on. Picking a class writes the rate into
+ * the line's plan, so it is visible on the chip rather than applied invisibly
+ * from somewhere else.
+ */
+export function setCategoryInflationClass(
+  doc: BudgetDoc,
+  categoryId: string,
+  key: string,
+): BudgetDoc {
+  const ratePct = inflationClass(key).ratePct
+  const line = doc.templateLines.find((l) => l.categoryId === categoryId)
+  return {
+    ...doc,
+    categories: doc.categories.map((c) =>
+      c.id === categoryId ? { ...c, inflationClass: key } : c,
+    ),
+    templateLines: doc.templateLines.map((l) =>
+      l.id === line?.id
+        ? {
+            ...l,
+            versions: l.versions.map((v, i) =>
+              i === l.versions.length - 1 ? { ...v, growthRatePct: ratePct } : v,
+            ),
+          }
+        : l,
+    ),
+  }
+}
+
+/** Some instruments are locked by their nature; naming one says so. */
+export function setCategoryInvestmentType(
+  doc: BudgetDoc,
+  categoryId: string,
+  key: string,
+): BudgetDoc {
+  return {
+    ...doc,
+    categories: doc.categories.map((c) =>
+      c.id === categoryId
+        ? { ...c, investmentType: key, locked: LOCKED_BY_DEFAULT.has(key) ? true : c.locked }
+        : c,
+    ),
+  }
+}
+
+export function setCategoryReturnOverride(
+  doc: BudgetDoc,
+  categoryId: string,
+  ratePct: number | undefined,
+): BudgetDoc {
+  return {
+    ...doc,
+    categories: doc.categories.map((c) =>
+      c.id === categoryId ? { ...c, returnRatePctOverride: ratePct } : c,
+    ),
   }
 }
 

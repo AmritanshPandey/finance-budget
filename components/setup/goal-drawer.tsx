@@ -14,7 +14,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
-import { addMonths, currentMonth } from '@/lib/domain/month'
+import { addMonths, currentMonth, formatMonthLabel, monthsBetween } from '@/lib/domain/month'
+import { INFLATION_CLASSES, inflateOver, inflationClass } from '@/lib/domain/rates'
 import { formatINR, toPaise } from '@/lib/domain/money'
 import { monthlyEMI } from '@/lib/domain/loan'
 import type { Goal, GoalFunding, ISOMonth, Paise } from '@/lib/domain/types'
@@ -32,6 +33,8 @@ export type GoalDraft = {
   downPayment: Paise
   annualRatePct: number
   tenureMonths: number
+  amountIn: 'today' | 'future'
+  inflationClass: string
 }
 
 export function emptyDraft(): GoalDraft {
@@ -44,6 +47,8 @@ export function emptyDraft(): GoalDraft {
     downPayment: 0,
     annualRatePct: 9,
     tenureMonths: 60,
+    amountIn: 'today',
+    inflationClass: 'none',
   }
 }
 
@@ -58,6 +63,8 @@ export function draftFromGoal(goal: Goal): GoalDraft {
     downPayment: goal.downPayment ?? 0,
     annualRatePct: goal.loanTerms?.annualRatePct ?? 9,
     tenureMonths: goal.loanTerms?.tenureMonths ?? 60,
+    amountIn: goal.amountIn ?? 'today',
+    inflationClass: goal.inflationClass ?? 'none',
   }
 }
 
@@ -100,6 +107,14 @@ function GoalForm({
   const [local, setLocal] = useState<GoalDraft>(draft)
 
   const loanFunded = local.funding !== 'savings'
+  const inflated =
+    local.amountIn === 'future'
+      ? local.targetAmount
+      : inflateOver(
+          local.targetAmount,
+          inflationClass(local.inflationClass).ratePct,
+          monthsBetween(currentMonth(), local.targetMonth),
+        )
   const borrowed = Math.max(0, local.targetAmount - local.downPayment)
   const emi = loanFunded ? monthlyEMI(borrowed, local.annualRatePct, local.tenureMonths) : 0
 
@@ -145,6 +160,54 @@ function GoalForm({
             value={local.targetAmount}
             onChange={(targetAmount) => setLocal({ ...local, targetAmount })}
           />
+
+          {/* A price in today's money is not what it will cost by then. */}
+          <div>
+            <p className="label-xs">That figure is</p>
+            <div className="mt-2 flex rounded-lg bg-muted p-0.5">
+              {(
+                [
+                  { key: 'today', label: "Today's price" },
+                  { key: 'future', label: 'The price then' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.key}
+                  onClick={() => setLocal({ ...local, amountIn: option.key })}
+                  className={cn(
+                    'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                    local.amountIn === option.key ? 'bg-card shadow-sm' : 'text-muted-foreground',
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            {local.amountIn === 'today' && (
+              <>
+                <select
+                  value={local.inflationClass}
+                  aria-label="How this goal's price rises"
+                  onChange={(e) => setLocal({ ...local, inflationClass: e.target.value })}
+                  className="mt-2 w-full rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground outline-none"
+                >
+                  {INFLATION_CLASSES.map((preset) => (
+                    <option key={preset.key} value={preset.key}>
+                      Rises like {preset.label.toLowerCase()}
+                      {preset.ratePct > 0 ? ` · ${preset.ratePct}%` : ''}
+                    </option>
+                  ))}
+                </select>
+                {inflated !== local.targetAmount && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    About <span className="tnum text-foreground">{formatINR(inflated)}</span> by{' '}
+                    {formatMonthLabel(local.targetMonth)} — that is what the app will plan for.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
 
           <label className="block">
             <span className="label-xs">Wanted by</span>

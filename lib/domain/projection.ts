@@ -13,6 +13,7 @@ import { hasActuals, hasIncomeActuals, monthActuals } from './actuals'
 import { loanEMI } from './loan'
 import { addMonths, compareMonth, currentMonth, monthOfDate, monthsBetween } from './month'
 import { scale } from './money'
+import { inflateOver, inflationClass, returnRateFor } from './rates'
 import { resolveMonth } from './resolve-month'
 import type {
   BudgetDoc,
@@ -49,15 +50,31 @@ export function projectionOrigin(doc: BudgetDoc): {
   return { month: doc.settings.startMonth, balance: doc.settings.startingBalance }
 }
 
-/** Cash a goal takes out of the balance at funding time. */
-export function goalCashRequired(goal: Goal): Paise {
-  if (goal.funding === 'savings') return goal.targetAmount
-  return Math.min(goal.downPayment ?? 0, goal.targetAmount)
+/**
+ * What a goal will actually cost by the time it lands.
+ *
+ * An amount given in today's money is inflated at its own class rate — a
+ * ₹20,00,000 degree three years out does not stay ₹20,00,000 while education
+ * costs climb. An amount given as a future price is taken literally.
+ */
+export function goalRequiredAmount(goal: Goal, originMonth: ISOMonth): Paise {
+  if (goal.amountIn === 'future') return goal.targetAmount
+  const rate = inflationClass(goal.inflationClass).ratePct
+  return inflateOver(goal.targetAmount, rate, monthsBetween(originMonth, goal.targetMonth))
 }
 
-function loanForGoal(goal: Goal, fundedMonth: ISOMonth): Loan | null {
+/** Cash a goal takes out of the balance at funding time. */
+export function goalCashRequired(goal: Goal, originMonth: ISOMonth): Paise {
+  const required = goalRequiredAmount(goal, originMonth)
+  if (goal.funding === 'savings') return required
+  // The deposit keeps its proportion as the price moves.
+  const factor = goal.targetAmount > 0 ? required / goal.targetAmount : 1
+  return Math.min(Math.round((goal.downPayment ?? 0) * factor), required)
+}
+
+function loanForGoal(goal: Goal, fundedMonth: ISOMonth, originMonth: ISOMonth): Loan | null {
   if (goal.funding === 'savings' || !goal.loanTerms) return null
-  const principal = goal.targetAmount - goalCashRequired(goal)
+  const principal = goalRequiredAmount(goal, originMonth) - goalCashRequired(goal, originMonth)
   if (principal <= 0) return null
   return {
     id: `goal-loan:${goal.id}`,
@@ -100,8 +117,23 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
   let balance = origin.balance
   // Investments are money too. They leave the monthly account but accumulate,
   // and the locked pot is wealth that goals are never allowed to spend.
-  let investedAvailable = 0
-  let investedLocked = 0
+  /**
+   * One pot per investment category, each compounding at the rate its
+   * instrument implies. A fixed deposit and an equity fund do not grow at the
+   * same speed, and averaging them into a single number hides the difference
+   * that matters most over ten years.
+   */
+  const pots = new Map<string, Paise>()
+  const contributed = new Map<string, Paise>()
+
+  const rateFor = (categoryId: string) => {
+    const category = doc.categories.find((c) => c.id === categoryId)
+    return returnRateFor(category?.investmentType, category?.returnRatePctOverride) / 12 / 100
+  }
+  const isLocked = (categoryId: string) =>
+    Boolean(doc.categories.find((c) => c.id === categoryId)?.locked)
+  const add = (map: Map<string, Paise>, key: string, amount: Paise) =>
+    map.set(key, (map.get(key) ?? 0) + amount)
 
   for (let i = 0; i < horizonMonths; i++) {
     const month = addMonths(origin.month, i)
@@ -124,12 +156,15 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
     let contributedLocked = 0
     let lumpAvailable = 0
     let lumpLocked = 0
+    /** Everything joining a pot this month, by category. */
+    const intoPots = new Map<string, Paise>()
 
     // A planned lump sum into an investment leaves cash but joins a pot.
     for (const oneOff of oneOffs) {
       if (oneOff.direction !== 'out' || !oneOff.investIntoCategoryId) continue
       const category = doc.categories.find((c) => c.id === oneOff.investIntoCategoryId)
       if (!category || category.kind !== 'investment') continue
+      add(intoPots, category.id, oneOff.amount)
       if (category.locked) lumpLocked += oneOff.amount
       else lumpAvailable += oneOff.amount
     }
@@ -141,9 +176,15 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
       expenses = actual.spent
       contributedAvailable = actual.investedAvailable
       contributedLocked = actual.investedLocked
+      for (const [categoryId, amount] of actual.byCategory) {
+        if (doc.categories.find((c) => c.id === categoryId)?.kind === 'investment') {
+          add(intoPots, categoryId, amount)
+        }
+      }
     } else {
       for (const line of resolved.lines) {
         if (line.kind !== 'investment') continue
+        add(intoPots, line.categoryId, line.amount)
         if (line.locked) contributedLocked += line.amount
         else contributedAvailable += line.amount
       }
@@ -154,16 +195,28 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
     const openingBalance = balance
     balance += surplus
 
-    investedAvailable += contributedAvailable + lumpAvailable
-    investedLocked += contributedLocked + lumpLocked
-
     // Returns accrue on money you actually have.
     const cashReturns = balance > 0 ? scale(balance, monthlyReturn) : 0
     balance += cashReturns
-    const availableReturns = scale(investedAvailable, monthlyReturn)
-    investedAvailable += availableReturns
-    const lockedReturns = scale(investedLocked, monthlyReturn)
-    investedLocked += lockedReturns
+
+    for (const [categoryId, amount] of intoPots) {
+      add(pots, categoryId, amount)
+      add(contributed, categoryId, amount)
+    }
+
+    let potReturns = 0
+    for (const [categoryId, value] of pots) {
+      const growth = scale(value, rateFor(categoryId))
+      potReturns += growth
+      pots.set(categoryId, value + growth)
+    }
+
+    let investedAvailable = 0
+    let investedLocked = 0
+    for (const [categoryId, value] of pots) {
+      if (isLocked(categoryId)) investedLocked += value
+      else investedAvailable += value
+    }
 
     const floor = safetyFloorFor(doc.settings.safetyFloor, resolved)
     const goalsFunded: FundedGoalRef[] = []
@@ -173,13 +226,23 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
       // A goal is never tested before its target month.
       if (compareMonth(goal.targetMonth, month) > 0) continue
 
-      const cashOut = goalCashRequired(goal)
+      const cashOut = goalCashRequired(goal, origin.month)
       // Cash first, then investments you are actually allowed to touch.
       if (balance + investedAvailable - floor < cashOut) continue
 
       const fromCash = Math.min(balance, cashOut)
       balance -= fromCash
-      investedAvailable -= cashOut - fromCash
+
+      // Then sell down the pots goals are allowed to touch, in order.
+      let owed = cashOut - fromCash
+      for (const [categoryId, value] of pots) {
+        if (owed <= 0) break
+        if (isLocked(categoryId)) continue
+        const taken = Math.min(value, owed)
+        pots.set(categoryId, value - taken)
+        investedAvailable -= taken
+        owed -= taken
+      }
 
       pending.delete(goal.id)
       fundedAt.set(goal.id, month)
@@ -190,7 +253,7 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
         cashOut,
       })
 
-      const loan = loanForGoal(goal, month)
+      const loan = loanForGoal(goal, month, origin.month)
       if (loan) loans.push(loan)
     }
 
@@ -204,10 +267,12 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
       surplus,
       openingBalance,
       closingBalance: balance,
-      returns: cashReturns + availableReturns + lockedReturns,
+      returns: cashReturns + potReturns,
       floor,
       investedAvailable,
       investedLocked,
+      pots: Object.fromEntries(pots),
+      contributed: Object.fromEntries(contributed),
       netWorth: balance + investedAvailable + investedLocked,
       oneOffs,
       events: resolved.lines
@@ -226,6 +291,7 @@ export function project(doc: BudgetDoc, opts?: { now?: ISOMonth }): Projection {
       emoji: goal.emoji,
       targetMonth: goal.targetMonth,
       targetAmount: goal.targetAmount,
+      requiredAmount: goalRequiredAmount(goal, origin.month),
       fundedMonth: funded,
       slipMonths,
       status: !funded ? 'unreachable' : slipMonths > 0 ? 'late' : 'onTime',
