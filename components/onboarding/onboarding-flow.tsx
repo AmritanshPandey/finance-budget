@@ -16,6 +16,7 @@ import {
   type SeedStep,
 } from '@/lib/domain/factory'
 import { newId } from '@/lib/domain/id'
+import { inferLook } from '@/lib/domain/look'
 import { addMonths, currentMonth, formatMonthLabel } from '@/lib/domain/month'
 import { formatINR, toPaise } from '@/lib/domain/money'
 import { addCategory } from '@/lib/domain/mutations'
@@ -83,6 +84,8 @@ export function OnboardingFlow() {
   const [locked, setLocked] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(SEED_CATEGORIES.map((c) => [c.name, Boolean(c.locked)])),
   )
+  /** Seed name -> what the user renamed it to. */
+  const [names, setNames] = useState<Record<string, string>>({})
   const [extras, setExtras] = useState<Extra[]>([])
   const [loans, setLoans] = useState<LoanDraft[]>([
     { id: newId('l'), name: SEED_LOAN.name, emi: toPaise(SEED_LOAN.rupees), monthsLeft: SEED_LOAN.defaultMonthsLeft },
@@ -124,6 +127,15 @@ export function OnboardingFlow() {
 
     for (const seed of SEED_CATEGORIES) {
       doc = setLineVersionsByName(doc, seed.name, planToVersions(plans[seed.name], seed.name))
+      const renamed = names[seed.name]
+      if (renamed && renamed !== seed.name) {
+        doc = {
+          ...doc,
+          categories: doc.categories.map((c) =>
+            c.name === seed.name ? { ...c, name: renamed, ...inferLook(renamed) } : c,
+          ),
+        }
+      }
       if (seed.kind === 'investment') {
         doc = {
           ...doc,
@@ -198,7 +210,8 @@ export function OnboardingFlow() {
         {seedsFor(target).map((seed) => (
           <div key={seed.name}>
             <PlanField
-              label={seed.name}
+              label={names[seed.name] ?? seed.name}
+              onRename={(next) => setNames((n) => ({ ...n, [seed.name]: next }))}
               plan={plans[seed.name]}
               onChange={(next) => setPlans((p) => ({ ...p, [seed.name]: next }))}
               horizonMonths={horizonMonths}

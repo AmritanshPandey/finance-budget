@@ -489,6 +489,15 @@ export function recordBalanceCheck(
   return { ...doc, balanceChecks: [...doc.balanceChecks, entry] }
 }
 
+export function setLabel(doc: BudgetDoc, key: string, value: string): BudgetDoc {
+  const labels = { ...(doc.settings.labels ?? {}) }
+  const trimmed = value.trim()
+  // An empty rename means "put the default back", not "call it nothing".
+  if (trimmed) labels[key] = trimmed
+  else delete labels[key]
+  return { ...doc, settings: { ...doc.settings, labels } }
+}
+
 export function updateSettings(doc: BudgetDoc, patch: Partial<Settings>): BudgetDoc {
   return { ...doc, settings: { ...doc.settings, ...patch } }
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { EditableHeading } from '@/components/editable-heading'
 import { useMemo } from 'react'
 import { IconTrendingDown, IconTrendingUp } from '@tabler/icons-react'
 
@@ -142,7 +143,7 @@ export function AnalyticsScreen() {
   return (
     <div className="mx-auto max-w-2xl px-4 pb-28 pt-safe">
       <header className="pb-4 pt-5">
-        <h1 className="text-xl font-semibold tracking-tight">Trends</h1>
+        <EditableHeading as="h1" labelKey="analytics.title" className="text-xl font-semibold tracking-tight" />
         <p className="text-xs text-muted-foreground">
           Where the money went, and where it is going.
         </p>
@@ -157,7 +158,7 @@ export function AnalyticsScreen() {
         }}
       >
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-base font-semibold">Overall spending</h2>
+          <EditableHeading labelKey="analytics.spending" className="text-base font-semibold" />
           {lastMonth > 0 && points.length > 1 && (
             <span className="flex shrink-0 items-center gap-1 rounded-full bg-background/85 px-2.5 py-1 text-xs font-semibold text-foreground">
               {down ? (
@@ -216,7 +217,7 @@ export function AnalyticsScreen() {
       </div>
 
       <section className="mt-3 rounded-3xl border bg-card p-4">
-        <h2 className="text-sm font-semibold tracking-tight">Where it goes</h2>
+        <EditableHeading labelKey="analytics.allocation" className="text-sm font-semibold tracking-tight" />
         {slices.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Nothing to show yet.</p>
         ) : (

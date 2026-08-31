@@ -203,6 +203,8 @@ export interface Settings {
   expectedAnnualReturnPct: number
   horizonMonths: number
   defaultViewMonths: number
+  /** Renamed headings, keyed by lib/domain/labels. */
+  labels?: Record<string, string>
 }
 
 // ---------------------------------------------------------------------------

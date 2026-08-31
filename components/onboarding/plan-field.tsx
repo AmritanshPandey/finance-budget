@@ -11,12 +11,15 @@ import type { Paise } from '@/lib/domain/types'
  */
 export function PlanField({
   label,
+  onRename,
   hint,
   plan,
   onChange,
   horizonMonths,
 }: {
   label: string
+  /** Supplied when the heading itself can be renamed. */
+  onRename?: (next: string) => void
   hint?: React.ReactNode
   plan: LinePlan
   onChange: (next: LinePlan) => void
@@ -31,7 +34,12 @@ export function PlanField({
 
   return (
     <div>
-      <RupeeField label={label} value={base?.amount ?? 0} onChange={setBaseAmount} />
+      <RupeeField
+        label={label}
+        onRenameLabel={onRename}
+        value={base?.amount ?? 0}
+        onChange={setBaseAmount}
+      />
       <div className="mt-2">
         <PlanControl
           hideFirstAmount

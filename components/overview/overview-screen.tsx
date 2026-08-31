@@ -1,5 +1,6 @@
 'use client'
 
+import { EditableHeading } from '@/components/editable-heading'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { IconArrowRight, IconPlus } from '@tabler/icons-react'
@@ -40,7 +41,7 @@ export function OverviewScreen() {
     <div className="mx-auto max-w-2xl px-4 pb-28 pt-safe">
       <header className="flex items-center justify-between gap-3 pb-4 pt-5">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Financial health</h1>
+          <EditableHeading as="h1" labelKey="overview.title" className="text-xl font-semibold tracking-tight" />
           <p className="text-xs text-muted-foreground">{formatMonthLabel(month)}</p>
         </div>
         <button
@@ -79,7 +80,7 @@ export function OverviewScreen() {
 
       <section className="mt-3 rounded-3xl border bg-card p-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold tracking-tight">Recent spending</h2>
+          <EditableHeading labelKey="overview.recent" className="text-sm font-semibold tracking-tight" />
           <Link
             href="/analytics"
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -156,7 +157,7 @@ function BillsDueCard({ doc }: { doc: BudgetDoc }) {
 
   return (
     <section className="rounded-3xl border bg-card p-4">
-      <h2 className="text-sm font-semibold tracking-tight">Bills due soon</h2>
+      <EditableHeading labelKey="overview.bills" className="text-sm font-semibold tracking-tight" />
       {next ? (
         <>
           <p className="mt-3 text-sm text-muted-foreground">{next.name}</p>
@@ -191,7 +192,7 @@ function TopGoalCard({ available }: { available: Paise }) {
   if (!goal) {
     return (
       <section className="rounded-3xl border bg-card p-4">
-        <h2 className="text-sm font-semibold tracking-tight">Top goal</h2>
+        <EditableHeading labelKey="overview.goal" className="text-sm font-semibold tracking-tight" />
         <Link href="/goals" className="mt-3 block text-xs text-muted-foreground hover:text-foreground">
           Nothing set yet. Pick something to save towards.
         </Link>
@@ -205,7 +206,7 @@ function TopGoalCard({ available }: { available: Paise }) {
 
   return (
     <Link href="/goals" className="block rounded-3xl border bg-card p-4">
-      <h2 className="text-sm font-semibold tracking-tight">Top goal</h2>
+      <EditableHeading labelKey="overview.goal" className="text-sm font-semibold tracking-tight" />
       <p className="mt-3 truncate text-sm text-muted-foreground">
         {goal.emoji} {goal.name}
       </p>

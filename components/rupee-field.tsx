@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 /** A labelled rupee input. Accepts "20k" and "1.5L" like everywhere else. */
 export function RupeeField({
   label,
+  onRenameLabel,
   hint,
   value,
   onChange,
@@ -17,6 +18,8 @@ export function RupeeField({
   className,
 }: {
   label: string
+  /** When given, the label itself is editable. */
+  onRenameLabel?: (next: string) => void
   hint?: string
   value: Paise
   onChange: (next: Paise) => void
@@ -25,10 +28,26 @@ export function RupeeField({
   className?: string
 }) {
   const [draft, setDraft] = useState<string | null>(null)
+  const [nameDraft, setNameDraft] = useState<string | null>(null)
 
   return (
     <label className={cn('block', className)}>
-      <span className="label-xs">{label}</span>
+      {onRenameLabel ? (
+        <input
+          value={nameDraft ?? label}
+          aria-label={`Rename ${label}`}
+          onFocus={() => setNameDraft(label)}
+          onChange={(e) => setNameDraft(e.target.value)}
+          onBlur={() => {
+            const next = nameDraft?.trim()
+            setNameDraft(null)
+            if (next && next !== label) onRenameLabel(next)
+          }}
+          className="label-xs w-full rounded-md bg-transparent outline-none focus:bg-accent/70 focus:ring-2 focus:ring-ring/40"
+        />
+      ) : (
+        <span className="label-xs">{label}</span>
+      )}
       <div className="mt-1.5 flex items-baseline gap-1 border-b-2 pb-1 focus-within:border-primary">
         <span className="text-xl text-muted-foreground">₹</span>
         <input

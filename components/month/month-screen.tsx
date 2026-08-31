@@ -7,6 +7,9 @@ import { GroupSection } from '@/components/month/group-section'
 import { LineRow } from '@/components/month/line-row'
 import { MonthSwitcher, switcherRange } from '@/components/month/month-switcher'
 import { NewLineRow } from '@/components/month/new-line-row'
+import { IconTable } from '@tabler/icons-react'
+
+import { BudgetTable } from '@/components/month/budget-table'
 import { Headline } from '@/components/month/headline'
 import { WhatsComing } from '@/components/month/whats-coming'
 import {
@@ -20,6 +23,7 @@ import {
   addCategory,
   clearOverride,
   renameCategory,
+  renameGroup,
   setLineAmount,
   setLinePlan,
   type EditScope,
@@ -47,6 +51,7 @@ export function MonthScreen() {
   const view = useMonthView(selectedMonth)
   const [pending, setPending] = useState<PendingEdit | null>(null)
   const [addingTo, setAddingTo] = useState<string | null>(null)
+  const [tableOpen, setTableOpen] = useState(false)
 
   const months = useMemo(
     () => (doc ? switcherRange(doc.settings.startMonth) : []),
@@ -198,6 +203,9 @@ export function MonthScreen() {
             name={group.name}
             subtotal={group.subtotal}
             muted={group.derived}
+            onRename={
+              group.derived ? undefined : (next) => apply((d) => renameGroup(d, group.id, next))
+            }
             onAdd={frozen || group.derived ? undefined : () => setAddingTo(group.id)}
           >
             {group.lines.map((line) => renderLine(line, group.id))}
@@ -222,9 +230,24 @@ export function MonthScreen() {
         ))}
       </div>
 
+      <button
+        onClick={() => setTableOpen(true)}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed py-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <IconTable size={16} stroke={2} />
+        Edit the whole plan as a table
+      </button>
+
       <div className="mt-3">
         <WhatsComing doc={doc} />
       </div>
+
+      <BudgetTable
+        doc={doc}
+        from={selectedMonth}
+        open={tableOpen}
+        onOpenChange={setTableOpen}
+      />
 
       {frozen && (
         <p className="mt-5 text-center text-xs text-muted-foreground">

@@ -1,5 +1,6 @@
 'use client'
 
+import { EditableHeading } from '@/components/editable-heading'
 import { useMemo, useState } from 'react'
 import {
   IconArrowBackUp,
@@ -54,7 +55,7 @@ export function WhatsComing({ doc }: { doc: BudgetDoc }) {
   return (
     <section className="rounded-3xl border bg-card p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold tracking-tight">What&rsquo;s coming</h2>
+        <EditableHeading labelKey="budget.coming" className="text-sm font-semibold tracking-tight" />
         <span className="text-xs text-muted-foreground">
           {changes.length === 0 ? 'nothing yet' : `${changes.length} scheduled`}
         </span>

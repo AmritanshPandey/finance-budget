@@ -1,5 +1,6 @@
 'use client'
 
+import { EditableHeading } from '@/components/editable-heading'
 import { FutureScreen } from '@/components/future/future-screen'
 import { GoalsSection } from '@/components/setup/goals-section'
 import { useBudget } from '@/lib/state/store'
@@ -15,7 +16,7 @@ export function GoalsScreen() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 pb-28 pt-safe">
       <header className="pb-1 pt-4">
-        <h1 className="text-xl font-semibold tracking-tight">Goals</h1>
+        <EditableHeading as="h1" labelKey="goals.title" className="text-xl font-semibold tracking-tight" />
         <p className="text-xs text-muted-foreground">
           Rank them, then watch where the money runs out.
         </p>

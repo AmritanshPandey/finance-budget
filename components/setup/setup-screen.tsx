@@ -1,5 +1,6 @@
 'use client'
 
+import { EditableHeading } from '@/components/editable-heading'
 import { AssumptionsSection } from '@/components/setup/assumptions-section'
 import { BalanceCheckSection } from '@/components/setup/balance-check-section'
 import { CategoriesSection } from '@/components/setup/categories-section'
@@ -16,7 +17,7 @@ export function SetupScreen() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 pb-28 pt-safe">
       <header className="pb-1 pt-4">
-        <h1 className="text-lg font-semibold tracking-tight">Setup</h1>
+        <EditableHeading as="h1" labelKey="setup.title" className="text-lg font-semibold tracking-tight" />
         <p className="text-xs text-muted-foreground">
           The shape of your plan, and the few numbers behind it.
         </p>

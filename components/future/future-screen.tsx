@@ -1,5 +1,6 @@
 'use client'
 
+import { EditableHeading } from '@/components/editable-heading'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react'
@@ -55,9 +56,10 @@ export function FutureScreen({ embedded = false }: { embedded?: boolean } = {}) 
         )}
       >
         <div>
-          <h2 className="text-base font-semibold tracking-tight">
-            {embedded ? 'What happens next' : 'Future'}
-          </h2>
+          <EditableHeading
+            labelKey="goals.timeline"
+            className="text-base font-semibold tracking-tight"
+          />
           <p className="text-xs text-muted-foreground">Scroll down to go forward</p>
         </div>
         <div className="flex rounded-lg bg-muted p-0.5">
