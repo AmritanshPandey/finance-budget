@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { cadenceToVersions } from '../cadence'
+import { planToVersions } from '../plan'
 import { setLineVersionsByName } from '../factory'
-import { addLoan, addOneOff, setLineAmount, setLineCadence } from '../mutations'
+import { addLoan, addOneOff, setLineAmount, setLinePlan } from '../mutations'
 import { project } from '../projection'
 import { scheduledChanges } from '../schedule'
 import { toPaise } from '../money'
@@ -21,7 +21,7 @@ describe('what is coming', () => {
     const doc = setLineVersionsByName(
       plainDoc(NOW),
       'Rent',
-      cadenceToVersions(NOW, toPaise(30_000), { mode: 'changes', from: '2027-04', amount: toPaise(38_000) }, 'Rent'),
+      planToVersions({ steps: [{ from: NOW, amount: toPaise(30_000) }, { from: '2027-04', amount: toPaise(38_000) }], growthRatePct: 0 }, 'Rent'),
     )
     const [change] = scheduledChanges(doc, NOW).filter((c) => c.kind === 'change')
     expect(change.month).toBe('2027-04')
@@ -33,7 +33,7 @@ describe('what is coming', () => {
     const doc = setLineVersionsByName(
       plainDoc(NOW),
       'Subscriptions',
-      cadenceToVersions(NOW, toPaise(7_500), { mode: 'ends', after: '2027-12' }, 'Subscriptions'),
+      planToVersions({ steps: [{ from: NOW, amount: toPaise(7_500) }], growthRatePct: 0, endsAfter: '2027-12' }, 'Subscriptions'),
     )
     const [ending] = scheduledChanges(doc, NOW).filter((c) => c.kind === 'ends')
     expect(ending.month).toBe('2027-12')
@@ -86,26 +86,43 @@ describe('what is coming', () => {
 })
 
 describe('re-planning a line', () => {
-  it('leaves history alone and rewrites the future', () => {
-    const base = plainDoc('2026-01')
+  it('keeps every step it is given', () => {
+    const base = plainDoc('2026-10')
     const lineId = lineIdFor(base, 'Rent')
-    // A change already made in the past must survive.
-    let doc = setLineAmount(base, '2026-03', lineId, toPaise(28_000), 'future')
-    doc = setLineCadence(doc, lineId, { mode: 'grows', ratePct: 10 }, NOW, toPaise(28_000), 'Rent')
-
+    const doc = setLinePlan(
+      base,
+      lineId,
+      {
+        steps: [
+          { from: '2026-10', amount: toPaise(78_000) },
+          { from: '2026-12', amount: toPaise(47_663) },
+          { from: '2027-03', amount: toPaise(41_063) },
+        ],
+        growthRatePct: 0,
+      },
+      'Rent',
+    )
     const versions = doc.templateLines.find((l) => l.id === lineId)!.versions
-    expect(versions.map((v) => v.from)).toEqual(['2026-01', '2026-03', '2026-08'])
-    expect(versions[2].growthRatePct).toBe(10)
+    expect(versions.map((v) => v.from)).toEqual(['2026-10', '2026-12', '2027-03'])
   })
 
-  it('clears overrides it would otherwise shadow', () => {
-    const base = plainDoc('2026-01')
-    const lineId = lineIdFor(base, 'Rent')
-    let doc = setLineAmount(base, '2027-02', lineId, toPaise(99_000), 'month')
-    expect(doc.overrides).toHaveLength(1)
-
-    doc = setLineCadence(doc, lineId, { mode: 'flat' }, NOW, toPaise(25_000), 'Rent')
-    expect(doc.overrides).toHaveLength(0)
+  it('surfaces every step in what is coming, not just the last', () => {
+    const base = plainDoc('2026-10')
+    const doc = setLinePlan(
+      base,
+      lineIdFor(base, 'Rent'),
+      {
+        steps: [
+          { from: '2026-10', amount: toPaise(78_000) },
+          { from: '2026-12', amount: toPaise(47_663) },
+          { from: '2027-03', amount: toPaise(41_063) },
+        ],
+        growthRatePct: 0,
+      },
+      'Rent',
+    )
+    const changes = scheduledChanges(doc, '2026-10').filter((c) => c.kind === 'change')
+    expect(changes.map((c) => c.month)).toEqual(['2026-12', '2027-03'])
   })
 })
 
@@ -181,7 +198,7 @@ describe('turning off automatic increases (v1 → v2)', () => {
     const withChange = setLineVersionsByName(
       base,
       'Rent',
-      cadenceToVersions(NOW, toPaise(30_000), { mode: 'changes', from: '2027-04', amount: toPaise(38_000) }, 'Rent'),
+      planToVersions({ steps: [{ from: NOW, amount: toPaise(30_000) }, { from: '2027-04', amount: toPaise(38_000) }], growthRatePct: 0 }, 'Rent'),
     )
     const migrated = migrate({ ...withChange, version: 1 })
     const rent = migrated.templateLines.find(

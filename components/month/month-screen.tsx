@@ -16,13 +16,13 @@ import {
 import { ImpactBar } from '@/components/impact-bar'
 import { compareMonth, currentMonth, formatMonthLabel } from '@/lib/domain/month'
 import { formatINR } from '@/lib/domain/money'
-import { cadenceFromVersions } from '@/lib/domain/cadence'
+import { planFromVersions } from '@/lib/domain/plan'
 import {
   addCategory,
   clearOverride,
   renameCategory,
   setLineAmount,
-  setLineCadence,
+  setLinePlan,
   type EditScope,
 } from '@/lib/domain/mutations'
 import { useMonthView } from '@/lib/state/selectors'
@@ -33,8 +33,17 @@ import type { Paise, ResolvedLine } from '@/lib/domain/types'
 export function MonthScreen() {
   const doc = useBudget((s) => s.doc)
   const apply = useBudget((s) => s.apply)
-  const selectedMonth = useUi((s) => s.selectedMonth)
+  const rawSelectedMonth = useUi((s) => s.selectedMonth)
   const setSelectedMonth = useUi((s) => s.setSelectedMonth)
+
+  /**
+   * A plan can legitimately begin in the future. Opening on a month before it
+   * starts would show a screen of zeroes and look broken, so fall forward to
+   * the first month that actually has a plan.
+   */
+  const startMonth = doc?.settings.startMonth
+  const selectedMonth =
+    startMonth && compareMonth(rawSelectedMonth, startMonth) < 0 ? startMonth : rawSelectedMonth
 
   const view = useMonthView(selectedMonth)
   const [pending, setPending] = useState<PendingEdit | null>(null)
@@ -123,13 +132,10 @@ export function MonthScreen() {
         color={category?.color}
         icon={category?.icon}
         sliderMax={sliderMaxByGroup.get(groupKey) ?? 10_000_00}
-        cadence={templateLine ? cadenceFromVersions(templateLine.versions) : null}
-        startMonth={selectedMonth}
+        plan={templateLine ? planFromVersions(templateLine.versions) : null}
         horizonMonths={doc?.settings.horizonMonths ?? 120}
-        onCadenceChange={(next) =>
-          apply((d) =>
-            setLineCadence(d, line.lineId, next, selectedMonth, line.amount, line.categoryName),
-          )
+        onPlanChange={(next) =>
+          apply((d) => setLinePlan(d, line.lineId, next, line.categoryName))
         }
         onAmountChange={(amount) => handleAmountChange(line, amount)}
         onRename={(name) => apply((d) => renameCategory(d, line.categoryId, name))}

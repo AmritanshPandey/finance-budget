@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { IconArrowLeft, IconArrowRight, IconLock, IconLockOpen, IconPlus, IconX } from '@tabler/icons-react'
 
-import { CadenceField } from '@/components/onboarding/cadence-field'
+import { PlanField } from '@/components/onboarding/plan-field'
 import { RupeeField } from '@/components/rupee-field'
 import { Button } from '@/components/ui/button'
-import { cadenceToVersions, type Cadence } from '@/lib/domain/cadence'
+import { flatPlan, planToVersions, sortSteps, type LinePlan } from '@/lib/domain/plan'
 import {
   SEED_CATEGORIES,
   SEED_LOAN,
@@ -28,7 +28,7 @@ interface Extra {
   step: SeedStep
   name: string
   amount: Paise
-  cadence: Cadence
+  plan: LinePlan
   kind: LineKind
 }
 
@@ -72,16 +72,11 @@ export function OnboardingFlow() {
   const [step, setStep] = useState(0)
   const [horizonYears, setHorizonYears] = useState(5)
 
-  const [amounts, setAmounts] = useState<Record<string, Paise>>(() =>
-    Object.fromEntries(SEED_CATEGORIES.map((c) => [c.name, toPaise(c.rupees ?? 0)])),
-  )
-  const [cadences, setCadences] = useState<Record<string, Cadence>>(() =>
+  const [plans, setPlans] = useState<Record<string, LinePlan>>(() =>
     Object.fromEntries(
       SEED_CATEGORIES.map((c) => [
         c.name,
-        c.defaultGrowthPct > 0
-          ? ({ mode: 'grows', ratePct: c.defaultGrowthPct } as Cadence)
-          : ({ mode: 'flat' } as Cadence),
+        { ...flatPlan(startMonth, toPaise(c.rupees ?? 0)), growthRatePct: c.defaultGrowthPct },
       ]),
     ),
   )
@@ -102,9 +97,11 @@ export function OnboardingFlow() {
 
   const horizonMonths = horizonYears * 12
 
+  const amountOf = (name: string) => sortSteps(plans[name]?.steps ?? [])[0]?.amount ?? 0
+
   function amountsForStep(target: SeedStep) {
     return (
-      seedsFor(target).reduce((a, c) => a + (amounts[c.name] ?? 0), 0) +
+      seedsFor(target).reduce((a, c) => a + amountOf(c.name), 0) +
       extras.filter((e) => e.step === target).reduce((a, e) => a + e.amount, 0)
     )
   }
@@ -118,7 +115,7 @@ export function OnboardingFlow() {
   function addExtra(target: SeedStep, kind: LineKind) {
     setExtras((list) => [
       ...list,
-      { id: newId('x'), step: target, name: '', amount: 0, cadence: { mode: 'flat' }, kind },
+      { id: newId('x'), step: target, name: '', amount: 0, plan: flatPlan(startMonth, 0), kind },
     ])
   }
 
@@ -126,11 +123,7 @@ export function OnboardingFlow() {
     let doc: BudgetDoc = createEmptyDoc(startMonth)
 
     for (const seed of SEED_CATEGORIES) {
-      doc = setLineVersionsByName(
-        doc,
-        seed.name,
-        cadenceToVersions(startMonth, amounts[seed.name] ?? 0, cadences[seed.name], seed.name),
-      )
+      doc = setLineVersionsByName(doc, seed.name, planToVersions(plans[seed.name], seed.name))
       if (seed.kind === 'investment') {
         doc = {
           ...doc,
@@ -153,7 +146,7 @@ export function OnboardingFlow() {
       doc = setLineVersionsByName(
         doc,
         extra.name.trim(),
-        cadenceToVersions(startMonth, extra.amount, extra.cadence, extra.name.trim()),
+        planToVersions(extra.plan, extra.name.trim()),
       )
     }
 
@@ -204,15 +197,11 @@ export function OnboardingFlow() {
       <div className="space-y-7">
         {seedsFor(target).map((seed) => (
           <div key={seed.name}>
-            <CadenceField
+            <PlanField
               label={seed.name}
-              value={amounts[seed.name] ?? 0}
-              onChange={(next) => setAmounts((a) => ({ ...a, [seed.name]: next }))}
-              cadence={cadences[seed.name]}
-              onCadenceChange={(next) => setCadences((c) => ({ ...c, [seed.name]: next }))}
-              startMonth={startMonth}
+              plan={plans[seed.name]}
+              onChange={(next) => setPlans((p) => ({ ...p, [seed.name]: next }))}
               horizonMonths={horizonMonths}
-              defaultGrowthPct={seed.defaultGrowthPct}
             />
             {seed.kind === 'investment' && (
               <button
@@ -258,23 +247,19 @@ export function OnboardingFlow() {
                 </button>
               </div>
               <div className="mt-4">
-                <CadenceField
+                <PlanField
                   label="Amount"
-                  value={extra.amount}
-                  onChange={(amount) =>
+                  plan={extra.plan}
+                  onChange={(plan) =>
                     setExtras((list) =>
-                      list.map((x) => (x.id === extra.id ? { ...x, amount } : x)),
+                      list.map((x) =>
+                        x.id === extra.id
+                          ? { ...x, plan, amount: sortSteps(plan.steps)[0]?.amount ?? 0 }
+                          : x,
+                      ),
                     )
                   }
-                  cadence={extra.cadence}
-                  onCadenceChange={(cadence) =>
-                    setExtras((list) =>
-                      list.map((x) => (x.id === extra.id ? { ...x, cadence } : x)),
-                    )
-                  }
-                  startMonth={startMonth}
                   horizonMonths={horizonMonths}
-                  defaultGrowthPct={6}
                 />
               </div>
             </div>

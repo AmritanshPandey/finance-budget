@@ -6,7 +6,7 @@
  * stored separately, so it can never drift from the forecast.
  */
 
-import { cadenceFromVersions } from './cadence'
+import { planFromVersions } from './plan'
 import { loanEMI, loanEndMonth } from './loan'
 import { addMonths, compareMonth, formatMonthLabel } from './month'
 import { formatINR } from './money'
@@ -154,10 +154,10 @@ export function scheduledChanges(doc: BudgetDoc, from: ISOMonth): ScheduledChang
   return out.sort((a, b) => compareMonth(a.month, b.month) || a.title.localeCompare(b.title))
 }
 
-/** The cadence a line is currently following, for the editor. */
-export function lineCadence(doc: BudgetDoc, lineId: string) {
+/** The plan a line is currently following, for the editor. */
+export function linePlan(doc: BudgetDoc, lineId: string) {
   const line = doc.templateLines.find((l) => l.id === lineId)
-  return line ? cadenceFromVersions(line.versions) : null
+  return line ? planFromVersions(line.versions) : null
 }
 
 export function isFuture(month: ISOMonth, now: ISOMonth): boolean {

@@ -4,12 +4,12 @@ import { useRef, useState } from 'react'
 import { IconArrowBackUp, IconLock, IconPigMoney } from '@tabler/icons-react'
 
 import { AmountInput } from '@/components/amount-input'
-import { CadenceControl } from '@/components/cadence-control'
+import { PlanControl } from '@/components/plan-control'
 import { CategoryIcon } from '@/components/category-icon'
 import { formatMonthLabel } from '@/lib/domain/month'
 import { catStyle } from '@/lib/ui/palette'
-import type { Cadence } from '@/lib/domain/cadence'
-import type { ISOMonth, Paise, ResolvedLine } from '@/lib/domain/types'
+import type { LinePlan } from '@/lib/domain/plan'
+import type { Paise, ResolvedLine } from '@/lib/domain/types'
 import { cn } from '@/lib/utils'
 
 export function LineRow({
@@ -18,11 +18,10 @@ export function LineRow({
   color,
   icon,
   sliderMax,
-  cadence,
-  startMonth,
+  plan,
   horizonMonths,
   onAmountChange,
-  onCadenceChange,
+  onPlanChange,
   onRename,
   onClearOverride,
 }: {
@@ -31,10 +30,9 @@ export function LineRow({
   color?: string
   icon?: string
   sliderMax: Paise
-  cadence?: Cadence | null
-  startMonth: ISOMonth
+  plan?: LinePlan | null
   horizonMonths: number
-  onCadenceChange: (next: Cadence) => void
+  onPlanChange: (next: LinePlan) => void
   onAmountChange: (amount: Paise) => void
   onRename: (name: string) => void
   onClearOverride: () => void
@@ -67,16 +65,9 @@ export function LineRow({
               {line.locked ? 'locked away' : 'counts toward goals'}
             </p>
           )}
-          {cadence && !frozen && (
+          {plan && !frozen && (
             <div className="pl-1 pt-0.5">
-              <CadenceControl
-                compact
-                cadence={cadence}
-                onChange={onCadenceChange}
-                currentAmount={line.amount}
-                startMonth={startMonth}
-                horizonMonths={horizonMonths}
-              />
+              <PlanControl compact plan={plan} onChange={onPlanChange} horizonMonths={horizonMonths} />
             </div>
           )}
           {line.overridden && !frozen && (

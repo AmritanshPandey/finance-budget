@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated budget export — rebuild with: npx vitest run real-plan
+budget-plan.json

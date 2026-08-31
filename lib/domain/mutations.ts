@@ -6,7 +6,7 @@
 
 import { LOAN_CATEGORY_PREFIX } from './constants'
 import { normaliseMerchant } from './actuals'
-import { cadenceToVersions, type Cadence } from './cadence'
+import { planToVersions, type LinePlan } from './plan'
 import { inferLook } from './look'
 import { addCategory as addCategoryToDoc } from './factory'
 import { newId } from './id'
@@ -98,35 +98,27 @@ export function clearOverride(
 }
 
 /**
- * Re-plan a line's future without touching its past.
+ * Replace a line's whole plan.
  *
- * Versions that already started stay exactly as they are — history is not a
- * draft. Everything from `fromMonth` onward is replaced by the new cadence,
- * built on the amount the line actually resolves to in that month (which the
- * caller already knows, so the resolution logic stays in one place).
+ * The plan *is* the full list of dated steps, so it replaces every version.
+ * Months that have already happened are protected by their frozen snapshots,
+ * not by this.
+ *
+ * One-month overrides are left alone deliberately: they are explicit decisions,
+ * they are listed in "What's coming", and silently deleting them would be worse
+ * than letting one visibly shadow a step.
  */
-export function setLineCadence(
+export function setLinePlan(
   doc: BudgetDoc,
   lineId: string,
-  cadence: Cadence,
-  fromMonth: ISOMonth,
-  baseAmount: Paise,
+  plan: LinePlan,
   name: string,
 ): BudgetDoc {
-  const line = doc.templateLines.find((l) => l.id === lineId)
-  if (!line) return doc
-
-  const history = line.versions.filter((v) => compareMonth(v.from, fromMonth) < 0)
-  const versions = [...history, ...cadenceToVersions(fromMonth, baseAmount, cadence, name)].sort(
-    (a, b) => compareMonth(a.from, b.from),
-  )
-
+  if (plan.steps.length === 0) return doc
   return {
     ...doc,
-    templateLines: doc.templateLines.map((l) => (l.id === lineId ? { ...l, versions } : l)),
-    // A one-month override from here on would shadow the plan just described.
-    overrides: doc.overrides.filter(
-      (o) => o.lineId !== lineId || compareMonth(o.month, fromMonth) < 0,
+    templateLines: doc.templateLines.map((l) =>
+      l.id === lineId ? { ...l, versions: planToVersions(plan, name) } : l,
     ),
   }
 }

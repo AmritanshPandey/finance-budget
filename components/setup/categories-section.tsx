@@ -16,12 +16,10 @@ import {
   setCategoryDueDay,
   setCategoryKind,
   setCategoryLocked,
-  setLineCadence,
+  setLinePlan,
 } from '@/lib/domain/mutations'
-import { CadenceControl } from '@/components/cadence-control'
-import { cadenceFromVersions } from '@/lib/domain/cadence'
-import { currentMonth } from '@/lib/domain/month'
-import { versionInForce } from '@/lib/domain/resolve-month'
+import { PlanControl } from '@/components/plan-control'
+import { planFromVersions } from '@/lib/domain/plan'
 import { useBudget } from '@/lib/state/store'
 import type { BudgetDoc, Category, LineKind } from '@/lib/domain/types'
 import { cn } from '@/lib/utils'
@@ -125,9 +123,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
   const groups = [...doc.groups].sort((a, b) => a.order - b.order)
   const investing = category.kind === 'investment'
   const line = lineForCategory(doc, category.id)
-  const active = line ? versionInForce(line.versions, currentMonth()) : null
-  const cadence = line ? cadenceFromVersions(line.versions) : null
-  const baseAmount = active?.amount ?? 0
+  const plan = line ? planFromVersions(line.versions) : null
 
   return (
     <li className="rounded-lg border border-transparent px-0.5 py-1 hover:border-border">
@@ -218,21 +214,14 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
         )}
       </div>
 
-      {/* The cadence chosen during onboarding stays editable, in full. */}
-      {line && cadence && (
+      {/* The whole life of the line, editable here as well as on Budget. */}
+      {line && plan && (
         <div className="mt-1.5 pl-1">
-          <CadenceControl
+          <PlanControl
             compact
-            cadence={cadence}
-            onChange={(next) =>
-              apply((d) =>
-                setLineCadence(d, line.id, next, currentMonth(), baseAmount, category.name),
-              )
-            }
-            currentAmount={baseAmount}
-            startMonth={currentMonth()}
+            plan={plan}
+            onChange={(next) => apply((d) => setLinePlan(d, line.id, next, category.name))}
             horizonMonths={doc.settings.horizonMonths}
-            defaultGrowthPct={category.inflatable ? doc.settings.inflationRatePct : 0}
           />
         </div>
       )}
