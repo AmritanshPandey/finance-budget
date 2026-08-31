@@ -70,7 +70,7 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
                   if (option.key === 'in') setInvestInto(null)
                 }}
                 className={cn(
-                  'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'flex-1 rounded-md px-3 py-2.5 text-xs font-medium transition-colors',
                   direction === option.key ? 'bg-card shadow-sm' : 'text-muted-foreground',
                 )}
               >
@@ -176,7 +176,7 @@ export function OneOffsSection({ doc }: { doc: BudgetDoc }) {
               <button
                 onClick={() => apply((d) => removeOneOff(d, oneOff.id))}
                 aria-label={`Remove ${oneOff.label}`}
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                className="-m-1 rounded-md p-2.5 text-muted-foreground hover:bg-accent hover:text-foreground"
               >
                 <IconX className="size-3.5" />
               </button>

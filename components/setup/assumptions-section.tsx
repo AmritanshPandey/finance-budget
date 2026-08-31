@@ -33,7 +33,7 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
                   )
                 }
                 className={cn(
-                  'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'flex-1 rounded-md px-3 py-2.5 text-xs font-medium transition-colors',
                   settings.horizonMonths === years * 12
                     ? 'bg-card shadow-sm'
                     : 'text-muted-foreground',
@@ -111,7 +111,7 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
                   )
                 }
                 className={cn(
-                  'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'flex-1 rounded-md px-3 py-2.5 text-xs font-medium transition-colors',
                   settings.safetyFloor.mode === mode
                     ? 'bg-card shadow-sm'
                     : 'text-muted-foreground',
@@ -176,7 +176,7 @@ export function PercentField({
           }}
           className="w-full bg-transparent num-lg outline-none"
         />
-        <span className="text-sm text-muted-foreground">{unit}</span>
+        <span className="shrink-0 whitespace-nowrap text-sm text-muted-foreground">{unit}</span>
       </div>
       {hint && <span className="mt-1.5 block text-xs text-muted-foreground">{hint}</span>}
     </label>

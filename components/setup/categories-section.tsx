@@ -142,7 +142,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
             apply((d) => archiveCategory(d, category.id, new Date().toISOString().slice(0, 10)))
           }
           aria-label={`Archive ${category.name}`}
-          className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="-m-1 rounded-md p-2.5 text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <IconArchive className="size-3.5" />
         </button>
@@ -155,7 +155,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
               value={category.groupId}
               aria-label={`Move ${category.name} to another group`}
               onChange={(e) => apply((d) => moveCategoryToGroup(d, category.id, e.target.value))}
-              className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+              className="rounded-md border bg-background px-2 py-1.5 text-xs text-muted-foreground outline-none"
             >
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
@@ -171,7 +171,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
               onChange={(e) =>
                 apply((d) => setCategoryKind(d, category.id, e.target.value as LineKind))
               }
-              className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+              className="rounded-md border bg-background px-2 py-1.5 text-xs text-muted-foreground outline-none"
             >
               <option value="expense">Spending</option>
               <option value="investment">Investing</option>
@@ -187,7 +187,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
             onChange={(e) =>
               apply((d) => setCategoryInflationClass(d, category.id, e.target.value))
             }
-            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+            className="rounded-md border bg-background px-2 py-1.5 text-xs text-muted-foreground outline-none"
           >
             {INFLATION_CLASSES.map((preset) => (
               <option key={preset.key} value={preset.key}>
@@ -205,7 +205,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
             onChange={(e) =>
               apply((d) => setCategoryInvestmentType(d, category.id, e.target.value))
             }
-            className="rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none"
+            className="rounded-md border bg-background px-2 py-1.5 text-xs text-muted-foreground outline-none"
           >
             {INVESTMENT_TYPES.map((preset) => (
               <option key={preset.key} value={preset.key}>
@@ -218,7 +218,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
 
         {/* A due day is what puts a bill on the overview. */}
         {category.kind === 'expense' && (
-          <label className="flex items-center gap-1 rounded-md border bg-background px-1.5 py-1 text-xs text-muted-foreground">
+          <label className="flex items-center gap-1 rounded-md border bg-background px-2 py-1.5 text-xs text-muted-foreground">
             due
             <input
               inputMode="numeric"
@@ -242,7 +242,7 @@ function CategoryRow({ doc, category }: { doc: BudgetDoc; category: Category }) 
             onClick={() => apply((d) => setCategoryLocked(d, category.id, !category.locked))}
             aria-pressed={Boolean(category.locked)}
             className={cn(
-              'flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs transition-colors',
+              'flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs transition-colors',
               category.locked
                 ? 'border-warn/40 bg-warn-soft text-warn'
                 : 'bg-background text-muted-foreground hover:bg-accent',

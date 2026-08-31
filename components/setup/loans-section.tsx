@@ -62,7 +62,7 @@ export function LoansSection({ doc }: { doc: BudgetDoc }) {
                 key={option.key}
                 onClick={() => setMode(option.key)}
                 className={cn(
-                  'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'flex-1 rounded-md px-3 py-2.5 text-xs font-medium transition-colors',
                   mode === option.key ? 'bg-card shadow-sm' : 'text-muted-foreground',
                 )}
               >
@@ -167,7 +167,7 @@ function LoanRow({ loan }: { loan: Loan }) {
         <button
           onClick={() => apply((d) => removeLoan(d, loan.id))}
           aria-label={`Remove ${loan.name}`}
-          className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="-m-1 rounded-md p-2.5 text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <IconX className="size-3.5" />
         </button>

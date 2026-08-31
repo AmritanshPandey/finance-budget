@@ -60,7 +60,7 @@ export function PlanControl({
         aria-expanded={open}
         className={cn(
           'flex items-center gap-1 rounded-full border transition-colors',
-          compact ? 'px-2 py-0.5 text-[0.6875rem]' : 'px-2.5 py-1 text-xs',
+          compact ? 'px-2.5 py-1 text-[0.6875rem]' : 'px-3 py-2 text-xs',
           planIsFlat(plan)
             ? 'border-border text-muted-foreground hover:bg-accent'
             : 'border-primary/40 bg-primary/10 text-primary',
@@ -85,7 +85,7 @@ export function PlanControl({
                       type="button"
                       onClick={() => update({ steps: steps.filter((_, i) => i !== index) })}
                       aria-label={`Remove the change from ${formatMonthLabel(step.from)}`}
-                      className="rounded-md p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      className="-m-1 rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       <IconX size={13} stroke={2.2} />
                     </button>
@@ -112,7 +112,7 @@ export function PlanControl({
           <button
             type="button"
             onClick={addStep}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-3 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <IconPlus size={14} stroke={2.2} />
             Add a change
@@ -130,7 +130,7 @@ export function PlanControl({
                 }}
                 className="w-full bg-transparent num-md outline-none"
               />
-              <span className="text-xs text-muted-foreground">% a year</span>
+              <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">% a year</span>
             </div>
             <span className="mt-1.5 block text-xs text-muted-foreground">
               Zero holds it still, which is the default.
@@ -150,7 +150,7 @@ export function PlanControl({
                   })
                 }
                 className={cn(
-                  'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                  'rounded-full border px-3 py-2 text-xs font-medium transition-colors',
                   plan.endsAfter
                     ? 'border-primary/40 bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-accent',

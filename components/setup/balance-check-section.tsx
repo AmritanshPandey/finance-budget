@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { RupeeField } from '@/components/rupee-field'
 import { Section } from '@/components/setup/section'
 import { Button } from '@/components/ui/button'
-import { currentMonth, formatMonthLabel } from '@/lib/domain/month'
+import { currentMonth, formatMonthLabel, maxMonth } from '@/lib/domain/month'
 import { formatINR } from '@/lib/domain/money'
 import { recordBalanceCheck } from '@/lib/domain/mutations'
 import { useBudget } from '@/lib/state/store'
@@ -22,7 +22,8 @@ export function BalanceCheckSection({ doc }: { doc: BudgetDoc }) {
   const projection = useBudget((s) => s.projection)
   const [actual, setActual] = useState<number>(0)
 
-  const now = currentMonth()
+  // A plan may start in the future; quoting a month before it began is noise.
+  const now = maxMonth(currentMonth(), doc.settings.startMonth)
   const projected =
     projection?.months.find((m) => m.month === now)?.closingBalance ??
     projection?.months[0]?.closingBalance ??

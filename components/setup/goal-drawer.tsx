@@ -175,7 +175,7 @@ function GoalForm({
                   key={option.key}
                   onClick={() => setLocal({ ...local, amountIn: option.key })}
                   className={cn(
-                    'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                    'flex-1 rounded-md px-3 py-2.5 text-xs font-medium transition-colors',
                     local.amountIn === option.key ? 'bg-card shadow-sm' : 'text-muted-foreground',
                   )}
                 >
@@ -232,7 +232,7 @@ function GoalForm({
                   key={option.key}
                   onClick={() => setLocal({ ...local, funding: option.key })}
                   className={cn(
-                    'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                    'flex-1 rounded-md px-3 py-2.5 text-xs font-medium transition-colors',
                     local.funding === option.key ? 'bg-card shadow-sm' : 'text-muted-foreground',
                   )}
                 >

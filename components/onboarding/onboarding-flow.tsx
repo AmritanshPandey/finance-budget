@@ -268,7 +268,7 @@ export function OnboardingFlow() {
         <button
           type="button"
           onClick={() => addExtra(target, target === 'investments' ? 'investment' : target === 'income' ? 'income' : 'expense')}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-3.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <IconPlus className="size-4" />
           Add another
@@ -430,7 +430,7 @@ export function OnboardingFlow() {
                 { id: newId('l'), name: '', emi: 0, monthsLeft: 12 },
               ])
             }
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-3.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <IconPlus className="size-4" />
             Add another loan

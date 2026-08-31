@@ -113,7 +113,7 @@ export function WhatsComing({ doc }: { doc: BudgetDoc }) {
                     <button
                       onClick={() => remove(change)}
                       aria-label={`Remove ${change.title}`}
-                      className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      className="-m-1 shrink-0 rounded-md p-2.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       <IconX size={13} stroke={2.2} />
                     </button>
@@ -126,7 +126,7 @@ export function WhatsComing({ doc }: { doc: BudgetDoc }) {
           {changes.length > 5 && (
             <button
               onClick={() => setExpanded((e) => !e)}
-              className="mt-2 flex w-full items-center justify-center gap-1 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+              className="mt-2 flex w-full items-center justify-center gap-1 py-2.5 text-xs text-muted-foreground hover:text-foreground"
             >
               {expanded ? 'Show less' : `Show all ${changes.length}`}
               <IconChevronRight
