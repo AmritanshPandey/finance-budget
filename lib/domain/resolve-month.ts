@@ -125,13 +125,12 @@ export function resolveMonth(
     const version = versionInForce(templateLine.versions, month)
     if (!version) continue // the line does not exist yet in this month
 
-    const growthRate =
-      version.growthRatePct ??
-      (category.kind === 'income'
-        ? doc.settings.incomeGrowthRatePct
-        : category.inflatable
-          ? doc.settings.inflationRatePct
-          : 0)
+    /**
+     * A rate applies only when it is written on the line. There is deliberately
+     * no fall-through to a global setting: an amount must never start climbing
+     * because of a number set somewhere the user cannot see from here.
+     */
+    const growthRate = version.growthRatePct ?? 0
 
     let amount: Paise = compoundMonthly(
       version.amount,

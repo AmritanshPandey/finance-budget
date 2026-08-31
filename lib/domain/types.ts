@@ -211,9 +211,10 @@ export interface Settings {
 
 /**
  * 1 → 2 turned off the automatic yearly increases that used to be applied by
- * default. See migrate().
+ * default. 2 → 3 pinned every line's rate explicitly, closing a path where a
+ * version with no rate inherited a global one. See migrate().
  */
-export const CURRENT_VERSION = 2
+export const CURRENT_VERSION = 3
 
 export interface BudgetDoc {
   version: number

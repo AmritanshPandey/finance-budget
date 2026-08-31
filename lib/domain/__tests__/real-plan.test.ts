@@ -128,7 +128,7 @@ describe('exporting it', () => {
 
     const path = 'budget-plan.json'
     writeFileSync(path, JSON.stringify(doc, null, 2))
-    expect(doc.version).toBe(2)
+    expect(doc.version).toBe(3)
 
     console.log(
       `\n  wrote ${path} — Oct ${formatINR(outgoings('2026-10'))}, ` +

@@ -15,7 +15,6 @@ import {
 } from '@/components/month/edit-scope-drawer'
 import { ImpactBar } from '@/components/impact-bar'
 import { compareMonth, currentMonth, formatMonthLabel } from '@/lib/domain/month'
-import { formatINR } from '@/lib/domain/money'
 import { planFromVersions } from '@/lib/domain/plan'
 import {
   addCategory,
@@ -165,12 +164,7 @@ export function MonthScreen() {
         frozen={frozen}
       />
 
-      <section className="mt-5 rounded-3xl border bg-card p-4">
-        <p className="label-xs">Estimated monthly income</p>
-        <p className="num-xl mt-1">{formatINR(incomeTotal)}</p>
-      </section>
-
-      <div className="mt-3 space-y-3">
+      <div className="mt-5 space-y-3">
         <GroupSection
           name="Income"
           subtotal={incomeTotal}

@@ -60,31 +60,14 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
 
         <div className="rounded-2xl border border-dashed p-3">
           <p className="text-xs text-muted-foreground">
-            These are all <span className="text-foreground">off unless you set them</span>. Nothing
-            in your plan goes up on its own — set a rate here to apply it across the board, or give
-            a single line its own on the Budget screen.
+            Nothing in your plan rises on its own. A line only climbs when you give it a rate or
+            name what kind of spending it is, on the Budget screen or under Categories below.
           </p>
         </div>
 
         <PercentField
-          label="Prices rise by"
-          hint="Applied each year to everyday spending. Zero means today's prices, forever."
-          value={settings.inflationRatePct}
-          onChange={(inflationRatePct) => apply((d) => updateSettings(d, { inflationRatePct }))}
-        />
-
-        <PercentField
-          label="Pay rises by"
-          hint="Applied to income each year. Zero assumes no raises."
-          value={settings.incomeGrowthRatePct}
-          onChange={(incomeGrowthRatePct) =>
-            apply((d) => updateSettings(d, { incomeGrowthRatePct }))
-          }
-        />
-
-        <PercentField
-          label="Savings grow by"
-          hint="One number for everything you hold. Zero ignores returns entirely."
+          label="Cash in your account grows by"
+          hint="Only the balance itself. Investments use the rate of whatever they are held in."
           value={settings.expectedAnnualReturnPct}
           onChange={(expectedAnnualReturnPct) =>
             apply((d) => updateSettings(d, { expectedAnnualReturnPct }))

@@ -183,7 +183,7 @@ describe('turning off automatic increases (v1 → v2)', () => {
     }
 
     const migrated = migrate(legacy)
-    expect(migrated.version).toBe(2)
+    expect(migrated.version).toBe(3)
     expect(migrated.settings.inflationRatePct).toBe(0)
     expect(migrated.settings.incomeGrowthRatePct).toBe(0)
     expect(migrated.settings.expectedAnnualReturnPct).toBe(0)

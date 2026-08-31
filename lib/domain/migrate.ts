@@ -56,5 +56,19 @@ export function migrate(stored: BudgetDoc): BudgetDoc {
   }
 
   const upgraded = (stored.version ?? 1) < 2 ? stopAutomaticIncreases(filled) : filled
-  return { ...upgraded, version: CURRENT_VERSION }
+
+  // Version 3: a version with no rate used to inherit a global one. Write the
+  // zero down so nothing can start growing from a setting off-screen.
+  const pinned: BudgetDoc =
+    (stored.version ?? 1) < 3
+      ? {
+          ...upgraded,
+          templateLines: upgraded.templateLines.map((line) => ({
+            ...line,
+            versions: line.versions.map((v) => ({ ...v, growthRatePct: v.growthRatePct ?? 0 })),
+          })),
+        }
+      : upgraded
+
+  return { ...pinned, version: CURRENT_VERSION }
 }

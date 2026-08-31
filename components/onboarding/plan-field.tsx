@@ -34,6 +34,7 @@ export function PlanField({
       <RupeeField label={label} value={base?.amount ?? 0} onChange={setBaseAmount} />
       <div className="mt-2">
         <PlanControl
+          hideFirstAmount
           plan={plan}
           onChange={onChange}
           horizonMonths={horizonMonths}

@@ -15,23 +15,37 @@ describe('the plain month', () => {
   })
 })
 
-describe('growth assumptions', () => {
-  it('raises income each year so a long forecast is not systematically pessimistic', () => {
+describe('nothing grows on its own', () => {
+  it('ignores a global rate when the line carries none', () => {
     const base = plainDoc()
     const doc = {
       ...base,
-      // Clear the flat-rate override the test helper applies to income.
+      // Clear the explicit zero the helper writes, as an older document would.
       templateLines: base.templateLines.map((line) =>
         line.categoryId === base.categories.find((c) => c.name === 'Salary')!.id
           ? { ...line, versions: line.versions.map((v) => ({ ...v, growthRatePct: undefined })) }
           : line,
       ),
-      settings: { ...base.settings, incomeGrowthRatePct: 10 },
+      // Set as high as it will go; it must still have no effect.
+      settings: { ...base.settings, incomeGrowthRatePct: 50, inflationRatePct: 50 },
     }
     const p = project(doc)
-    // ₹1,00,000 × 1.1 = ₹1,10,000 twelve months on.
-    expect(p.months[12].income).toBe(toPaise(110_000))
-    expect(p.months[0].income).toBe(toPaise(100_000))
+    expect(p.months[119].income).toBe(p.months[0].income)
+    expect(p.months[119].expenses).toBe(p.months[0].expenses)
+  })
+
+  it('grows only when the rate is written on the line itself', () => {
+    const base = plainDoc()
+    const doc = {
+      ...base,
+      templateLines: base.templateLines.map((line) =>
+        line.categoryId === base.categories.find((c) => c.name === 'Salary')!.id
+          ? { ...line, versions: line.versions.map((v) => ({ ...v, growthRatePct: 10 })) }
+          : line,
+      ),
+    }
+    // ₹1,00,000 × 1.1 twelve months on.
+    expect(project(doc).months[12].income).toBe(toPaise(110_000))
   })
 })
 

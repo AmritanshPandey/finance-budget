@@ -24,11 +24,14 @@ export function PlanControl({
   onChange,
   horizonMonths,
   compact,
+  hideFirstAmount,
 }: {
   plan: LinePlan
   onChange: (next: LinePlan) => void
   horizonMonths: number
   compact?: boolean
+  /** The first step's amount is already shown by the field above. */
+  hideFirstAmount?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const steps = sortSteps(plan.steps)
@@ -98,13 +101,15 @@ export function PlanControl({
                   onChange={(e) => setStep(index, { from: e.target.value as ISOMonth })}
                   className="mt-1 w-full border-b-2 bg-transparent pb-1 num-md outline-none focus:border-primary"
                 />
-                <div className="mt-2">
-                  <RupeeField
-                    label="It is"
-                    value={step.amount}
-                    onChange={(amount) => setStep(index, { amount })}
-                  />
-                </div>
+                {!(hideFirstAmount && index === 0) && (
+                  <div className="mt-2">
+                    <RupeeField
+                      label="It is"
+                      value={step.amount}
+                      onChange={(amount) => setStep(index, { amount })}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ol>

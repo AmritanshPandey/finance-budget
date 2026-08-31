@@ -71,7 +71,8 @@ export function setLineAmount(
   versions.push({
     from: month,
     amount,
-    growthRatePct: current?.growthRatePct,
+    // Explicit, never undefined — an absent rate used to mean "inherit".
+    growthRatePct: current?.growthRatePct ?? 0,
     label,
   })
   versions.sort((a, b) => compareMonth(a.from, b.from))
