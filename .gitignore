@@ -42,3 +42,4 @@ next-env.d.ts
 
 # generated budget export — rebuild with: npx vitest run real-plan
 budget-plan.json
+life-plan.json

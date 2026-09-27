@@ -10,8 +10,11 @@ import {
   LoansCard,
   SavingsCard,
 } from '@/components/analytics/summaries'
-import { AreaTrend, type TrendPoint } from '@/components/charts/area-trend'
-import { Donut, type DonutSlice } from '@/components/charts/donut'
+import { EChart } from '@/components/charts/echart'
+import { YearlyView } from '@/components/analytics/yearly-view'
+import type { EChartsOption } from 'echarts'
+import type { TrendPoint } from '@/components/charts/area-trend'
+import type { DonutSlice } from '@/components/charts/donut'
 import { monthActuals } from '@/lib/domain/actuals'
 import {
   addMonths,
@@ -19,9 +22,9 @@ import {
   currentMonth,
   formatMonthShort,
   maxMonth,
-  monthsBetween,
 } from '@/lib/domain/month'
 import { formatCompactINR, formatINR } from '@/lib/domain/money'
+import { colourOf, useResolvedPalette } from '@/lib/ui/resolved-palette'
 import { catVar } from '@/lib/ui/palette'
 import { resolveMonth } from '@/lib/domain/resolve-month'
 import { useBudget } from '@/lib/state/store'
@@ -46,12 +49,25 @@ export function AnalyticsScreen() {
   const doc = useBudget((s) => s.doc)
   // A plan may start in the future; reading today's month would show all zeroes.
   const now = doc ? maxMonth(currentMonth(), doc.settings.startMonth) : currentMonth()
+  const palette = useResolvedPalette()
 
+  /**
+   * A window around today: up to a year of history where it exists, and two
+   * years of the plan ahead. This app is mostly about what is coming, so a
+   * chart that only looks backwards is empty on a plan that starts today.
+   */
   const months = useMemo(() => {
     if (!doc) return []
     const start = doc.settings.startMonth
-    const span = Math.min(12, monthsBetween(start, now) + 1)
-    return Array.from({ length: Math.max(1, span) }, (_, i) => addMonths(now, i - span + 1))
+    const last = addMonths(start, doc.settings.horizonMonths - 1)
+    let first = addMonths(now, -11)
+    if (compareMonth(first, start) < 0) first = start
+    const out: string[] = []
+    for (let m = first; compareMonth(m, last) <= 0; m = addMonths(m, 1)) {
+      out.push(m)
+      if (compareMonth(m, addMonths(now, 23)) >= 0) break
+    }
+    return out
   }, [doc, now])
 
   const points: TrendPoint[] = useMemo(
@@ -126,17 +142,86 @@ export function AnalyticsScreen() {
           actual.count > 0
             ? (actual.byCategory.get(c.id) ?? 0)
             : (view.lines.find((l) => l.categoryId === c.id)?.amount ?? 0),
-        color: catVar(c.color),
+        color: colourOf(palette, c.color),
       }))
       .filter((s) => s.value > 0)
       .sort((a, b) => b.value - a.value)
-  }, [doc, now])
+  }, [doc, now, palette])
 
   if (!doc) return null
 
-  const thisMonth = points[points.length - 1]?.value ?? 0
-  const lastMonth = points[points.length - 2]?.value ?? 0
-  const changePct = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0
+  const nowIndex = months.indexOf(now)
+
+  const trendOption: EChartsOption = {
+    animationDuration: 500,
+    grid: { left: 0, right: 0, top: 8, bottom: 18, containLabel: false },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(20,20,20,0.95)',
+      borderWidth: 0,
+      textStyle: { color: '#fff', fontSize: 12 },
+      valueFormatter: (value) => formatINR(Number(value)),
+    },
+    xAxis: {
+      type: 'category',
+      data: points.map((p) => p.label),
+      boundaryGap: false,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: 'rgba(0,0,0,0.55)', fontSize: 10, interval: 'auto' },
+    },
+    yAxis: { type: 'value', show: false, min: 'dataMin' },
+    series: [
+      {
+        type: 'line',
+        smooth: 0.4,
+        showSymbol: false,
+        data: points.map((p) => p.value),
+        lineStyle: { width: 2.5, color: 'rgba(0,0,0,0.75)' },
+        areaStyle: { color: 'rgba(0,0,0,0.16)' },
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          label: { show: false },
+          lineStyle: { color: 'rgba(0,0,0,0.45)', type: 'dashed', width: 1 },
+          data: [{ xAxis: nowIndex }],
+        },
+      },
+    ],
+  }
+
+  const donutOption: EChartsOption = {
+    animationDuration: 500,
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(20,20,20,0.95)',
+      borderWidth: 0,
+      textStyle: { color: palette.text, fontSize: 12 },
+      valueFormatter: (value) => formatINR(Number(value)),
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['58%', '88%'],
+        avoidLabelOverlap: true,
+        padAngle: 1.5,
+        itemStyle: { borderRadius: 4, borderWidth: 0 },
+        label: { show: false },
+        emphasis: { scale: true, scaleSize: 4 },
+        data: slices.map((slice) => ({
+          name: slice.label,
+          value: slice.value,
+          itemStyle: { color: slice.color },
+        })),
+      },
+    ],
+  }
+
+  const thisMonth = points[nowIndex]?.value ?? points[0]?.value ?? 0
+  // Against a year out, which is the comparison a forward plan can actually make.
+  const aheadIndex = Math.min(nowIndex + 12, points.length - 1)
+  const ahead = points[aheadIndex]?.value ?? thisMonth
+  const changePct = thisMonth > 0 ? ((ahead - thisMonth) / thisMonth) * 100 : 0
   const down = changePct < 0
   const total = slices.reduce((a, s) => a + s.value, 0)
 
@@ -159,29 +244,23 @@ export function AnalyticsScreen() {
       >
         <div className="flex items-start justify-between gap-3">
           <EditableHeading labelKey="analytics.spending" className="text-base font-semibold" />
-          {lastMonth > 0 && points.length > 1 && (
+          {points.length > 1 && aheadIndex !== nowIndex && (
             <span className="flex shrink-0 items-center gap-1 rounded-full bg-background/85 px-2.5 py-1 text-xs font-semibold text-foreground">
               {down ? (
                 <IconTrendingDown size={13} stroke={2.4} className="text-positive" />
               ) : (
                 <IconTrendingUp size={13} stroke={2.4} className="text-negative" />
               )}
-              {down ? 'Down' : 'Up'} {Math.abs(Math.round(changePct))}% vs{' '}
-              {points[points.length - 2]?.label}
+              {down ? 'Down' : 'Up'} {Math.abs(Math.round(changePct))}% by{' '}
+              {points[aheadIndex]?.label}
             </span>
           )}
         </div>
 
         <p className="num-xl mt-2">{formatINR(thisMonth)}</p>
 
-        <div className="mt-3 opacity-90">
-          <AreaTrend points={points} markerIndex={points.length - 1} />
-        </div>
-
-        <div className="mt-1 flex justify-between text-xs font-medium opacity-70">
-          <span>{points[0]?.label}</span>
-          <span>{points[Math.floor(points.length / 2)]?.label}</span>
-          <span>{points[points.length - 1]?.label}</span>
+        <div className="-mx-2 mt-2">
+          <EChart option={trendOption} height={150} />
         </div>
       </section>
 
@@ -222,10 +301,9 @@ export function AnalyticsScreen() {
           <p className="mt-3 text-sm text-muted-foreground">Nothing to show yet.</p>
         ) : (
           <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-            <Donut slices={slices}>
-              <span className="label-xs">Total</span>
-              <span className="num-md mt-0.5">{formatCompactINR(total)}</span>
-            </Donut>
+            <div className="w-full max-w-56 shrink-0">
+              <EChart option={donutOption} height={200} />
+            </div>
 
             <ul className="w-full flex-1 space-y-1.5">
               {slices.slice(0, 7).map((slice) => (
@@ -247,6 +325,8 @@ export function AnalyticsScreen() {
           </div>
         )}
       </section>
+
+      <YearlyView doc={doc} />
 
       <InvestmentsCard doc={doc} />
       <LoansCard doc={doc} />

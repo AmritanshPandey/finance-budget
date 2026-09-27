@@ -21,7 +21,7 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
         <div>
           <p className="label-xs">How far ahead you plan</p>
           <div className="mt-2 flex rounded-lg bg-muted p-0.5">
-            {[3, 5, 10].map((years) => (
+            {[3, 5, 10, 12].map((years) => (
               <button
                 key={years}
                 onClick={() =>
@@ -45,7 +45,10 @@ export function AssumptionsSection({ doc }: { doc: BudgetDoc }) {
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
             The forecast runs to{' '}
-            {formatMonthLabel(addMonths(settings.startMonth, settings.horizonMonths - 1))}.
+            {formatMonthLabel(addMonths(settings.startMonth, settings.horizonMonths - 1))}
+            {settings.horizonMonths % 12 !== 0 &&
+              ` · ${settings.horizonMonths} months, which is not a whole number of years`}
+            .
           </p>
         </div>
 
