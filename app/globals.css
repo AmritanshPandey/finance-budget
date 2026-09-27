@@ -5,9 +5,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-newsreader);
+  --font-heading: var(--font-newsreader);
 
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -62,59 +62,60 @@
  * loud accent; a light twin would be a different design, not a variant.
  */
 :root {
-  --radius: 0.875rem;
+  --radius: 0.75rem;
 
-  --background: oklch(0.155 0 0);
-  --foreground: oklch(0.97 0 0);
+  /* Paper and ink. Nothing here is decorative; colour belongs to the data. */
+  --background: oklch(0.987 0.002 90);
+  --foreground: oklch(0.24 0.028 250);
 
-  --card: oklch(0.208 0 0);
+  --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
-  /* One step above a card, for rows sitting inside one. */
-  --elevated: oklch(0.253 0 0);
-  --popover: oklch(0.232 0 0);
+  /* A recessed fill for chart plots and inputs, one step below paper. */
+  --elevated: oklch(0.963 0.004 250);
+  --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
 
-  /* The lime is the only thing allowed to shout. */
-  --primary: oklch(0.879 0.211 128);
-  --primary-foreground: oklch(0.19 0.03 128);
+  /* Actions are ink, not an accent. A bright button would compete with data. */
+  --primary: oklch(0.28 0.038 252);
+  --primary-foreground: oklch(0.99 0.002 90);
 
-  --secondary: oklch(0.268 0 0);
-  --secondary-foreground: var(--foreground);
-  --muted: oklch(0.268 0 0);
-  --muted-foreground: oklch(0.688 0 0);
-  --accent: oklch(0.288 0 0);
-  --accent-foreground: var(--foreground);
+  --secondary: oklch(0.955 0.005 250);
+  --secondary-foreground: oklch(0.32 0.03 250);
+  --muted: oklch(0.958 0.005 250);
+  --muted-foreground: oklch(0.505 0.024 250);
+  --accent: oklch(0.945 0.008 250);
+  --accent-foreground: oklch(0.28 0.038 252);
 
-  --destructive: oklch(0.68 0.19 25);
-  --border: oklch(1 0 0 / 11%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.879 0.211 128);
+  --destructive: oklch(0.52 0.19 25);
+  --border: oklch(0.912 0.007 250);
+  --input: oklch(0.888 0.009 250);
+  --ring: oklch(0.55 0.1 250);
 
-  --positive: oklch(0.83 0.19 140);
-  --positive-soft: oklch(0.3 0.07 140);
-  --warn: oklch(0.83 0.15 82);
-  --warn-soft: oklch(0.32 0.06 82);
-  --negative: oklch(0.7 0.18 25);
-  --negative-soft: oklch(0.32 0.08 25);
+  --positive: oklch(0.52 0.13 152);
+  --positive-soft: oklch(0.955 0.03 152);
+  --warn: oklch(0.58 0.12 70);
+  --warn-soft: oklch(0.962 0.035 75);
+  --negative: oklch(0.53 0.18 25);
+  --negative-soft: oklch(0.958 0.025 25);
 
-  --cat-lime: oklch(0.879 0.211 128);
-  --cat-yellow: oklch(0.855 0.155 92);
-  --cat-purple: oklch(0.72 0.16 300);
-  --cat-sky: oklch(0.77 0.115 245);
-  --cat-teal: oklch(0.82 0.13 182);
-  --cat-blue: oklch(0.7 0.145 258);
-  --cat-pink: oklch(0.76 0.145 350);
-  --cat-orange: oklch(0.77 0.15 58);
-  --cat-red: oklch(0.7 0.18 25);
-  --cat-slate: oklch(0.68 0.03 250);
-  /* Category colours are all light, so solid fills take dark text. */
-  --on-cat: oklch(0.18 0 0);
+  /* Retuned for a white ground — the old set was built for near-black. */
+  --cat-lime: oklch(0.60 0.155 132);
+  --cat-yellow: oklch(0.66 0.135 78);
+  --cat-purple: oklch(0.51 0.175 300);
+  --cat-sky: oklch(0.60 0.125 235);
+  --cat-teal: oklch(0.55 0.105 192);
+  --cat-blue: oklch(0.46 0.17 262);
+  --cat-pink: oklch(0.57 0.17 350);
+  --cat-orange: oklch(0.62 0.155 48);
+  --cat-red: oklch(0.54 0.19 27);
+  --cat-slate: oklch(0.50 0.03 250);
+  --on-cat: oklch(0.99 0.002 90);
 
-  --chart-1: var(--cat-lime);
-  --chart-2: var(--cat-purple);
-  --chart-3: var(--cat-sky);
-  --chart-4: var(--cat-yellow);
-  --chart-5: var(--cat-teal);
+  --chart-1: var(--cat-blue);
+  --chart-2: var(--cat-teal);
+  --chart-3: var(--cat-orange);
+  --chart-4: var(--cat-purple);
+  --chart-5: var(--cat-lime);
 }
 
 @layer base {
@@ -124,7 +125,7 @@
   html {
     @apply font-sans;
     -webkit-tap-highlight-color: transparent;
-    color-scheme: dark;
+    color-scheme: light;
   }
   body {
     @apply bg-background text-foreground;
@@ -141,21 +142,33 @@
   font-feature-settings: "tnum" 1;
 }
 
-/* The figures are the typography: large, tight, confident. */
+/*
+ * Figures are set in the serif. A finance app that reaches for a geometric sans
+ * looks like every other one; a book face gives eleven years of planning the
+ * unhurried quality it should have.
+ */
 @utility num-hero {
-  @apply text-[2.9rem] leading-[1] font-semibold tracking-[-0.04em] tnum;
+  font-family: var(--font-serif), Georgia, serif;
+  @apply text-[3.25rem] leading-[0.95] font-normal tracking-[-0.02em] tnum;
 }
 @utility num-xl {
-  @apply text-[2.25rem] leading-[1.05] font-semibold tracking-[-0.03em] tnum;
+  font-family: var(--font-serif), Georgia, serif;
+  @apply text-[2.375rem] leading-[1] font-normal tracking-[-0.015em] tnum;
 }
 @utility num-lg {
-  @apply text-2xl leading-tight font-semibold tracking-[-0.02em] tnum;
+  font-family: var(--font-serif), Georgia, serif;
+  @apply text-[1.625rem] leading-tight font-normal tnum;
 }
 @utility num-md {
   @apply text-base font-medium tracking-[-0.01em] tnum;
 }
+/* Sentence case, quiet. Tracked-out caps above every heading is a tell. */
 @utility label-xs {
-  @apply text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground;
+  @apply text-[0.8125rem] font-normal text-muted-foreground;
+}
+@utility title-serif {
+  font-family: var(--font-serif), Georgia, serif;
+  @apply font-normal tracking-[-0.01em];
 }
 
 /* Safe-area padding so the sticky bars clear the iOS home indicator. */

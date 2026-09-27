@@ -16,8 +16,8 @@ export function GoalsScreen() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 pb-28 pt-safe">
       <header className="pb-1 pt-4">
-        <EditableHeading as="h1" labelKey="goals.title" className="text-xl font-semibold tracking-tight" />
-        <p className="text-xs text-muted-foreground">
+        <EditableHeading as="h1" labelKey="goals.title" className="title-serif text-[2rem] leading-tight" />
+        <p className="mt-1 text-[0.9375rem] text-muted-foreground">
           Rank them, then watch where the money runs out.
         </p>
       </header>

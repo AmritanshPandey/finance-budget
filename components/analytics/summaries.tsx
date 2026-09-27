@@ -27,10 +27,12 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="mt-3 rounded-3xl border bg-card p-4">
-      <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-      {caption && <p className="mt-0.5 text-xs text-muted-foreground">{caption}</p>}
-      <div className="mt-4">{children}</div>
+    <section className="mt-10 border-t pt-6">
+      <h2 className="title-serif text-[1.375rem]">{title}</h2>
+      {caption && (
+        <p className="mt-1 text-[0.9375rem] text-muted-foreground">{caption}</p>
+      )}
+      <div className="mt-5">{children}</div>
     </section>
   )
 }
@@ -38,8 +40,8 @@ function Card({
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
     <div>
-      <p className="label-xs">{label}</p>
-      <p className={cn('num-md mt-1 text-lg font-semibold', tone)}>{value}</p>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className={cn('num-lg mt-0.5', tone)}>{value}</p>
     </div>
   )
 }
@@ -139,7 +141,7 @@ export function LoansCard({ doc }: { doc: BudgetDoc }) {
       </ul>
 
       {summary.freeFrom && (
-        <p className="mt-4 rounded-2xl bg-positive-soft/60 p-3 text-xs text-positive">
+        <p className="mt-5 rounded-xl bg-positive-soft p-3 text-sm text-positive">
           From {formatMonthLabel(summary.freeFrom)} you have no loan payments at all, and the
           last <span className="tnum font-semibold">{formatINR(summary.freedAmount)}</span> a month
           is yours again.
@@ -181,7 +183,7 @@ export function SavingsCard({ doc }: { doc: BudgetDoc }) {
       <p className="mt-3 text-xs text-muted-foreground">
         {summary.income === 0
           ? 'Add your income in Budget and this becomes meaningful.'
-          : `If income stopped today, what you hold covers about ${summary.runwayMonths} months of spending.`}
+          : `If income stopped today, what you hold covers about ${summary.runwayMonths} ${summary.runwayMonths === 1 ? 'month' : 'months'} of spending.`}
       </p>
     </Card>
   )

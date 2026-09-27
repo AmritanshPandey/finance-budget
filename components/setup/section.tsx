@@ -13,8 +13,8 @@ export function Section({
     <section className="rounded-xl border bg-card">
       <div className="flex items-start gap-3 border-b px-4 py-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-          {caption && <p className="mt-0.5 text-xs text-muted-foreground">{caption}</p>}
+          <h2 className="title-serif text-[1.25rem]">{title}</h2>
+          {caption && <p className="mt-1 text-sm text-muted-foreground">{caption}</p>}
         </div>
         {action}
       </div>

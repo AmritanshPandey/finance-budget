@@ -1,84 +1,71 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { IconChevronRight, IconMinus, IconTrendingDown, IconTrendingUp } from '@tabler/icons-react'
+import { IconChevronRight } from '@tabler/icons-react'
 import type { EChartsOption } from 'echarts'
 
 import { CategoryIcon } from '@/components/category-icon'
+import { EditableHeading } from '@/components/editable-heading'
 import { EChart } from '@/components/charts/echart'
+import { CATEGORY_COLORS } from '@/lib/domain/look'
 import { formatCompactINR, formatINR } from '@/lib/domain/money'
 import { growthPct, monthsCovered, yearlySummary, type YearRow } from '@/lib/domain/yearly'
-import { CATEGORY_COLORS } from '@/lib/domain/look'
 import { colourOf, useResolvedPalette } from '@/lib/ui/resolved-palette'
 import { cn } from '@/lib/utils'
 import type { BudgetDoc, Paise } from '@/lib/domain/types'
 
-/** A year's change against the one before it, as a chip. */
+/** A change against another year, as a quiet figure rather than a badge. */
 function Change({ previous, next }: { previous: Paise; next: Paise }) {
   const pct = growthPct(previous, next)
-  if (pct === null) return <span className="text-xs text-muted-foreground">—</span>
+  if (pct === null) return <span className="text-sm text-muted-foreground">—</span>
 
   const up = pct > 0
   const flat = Math.abs(pct) < 0.5
-  const Icon = flat ? IconMinus : up ? IconTrendingUp : IconTrendingDown
 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 whitespace-nowrap text-xs font-medium tnum',
+        'whitespace-nowrap text-sm tnum',
         flat ? 'text-muted-foreground' : up ? 'text-negative' : 'text-positive',
       )}
     >
-      <Icon size={12} stroke={2.4} />
-      {pct === Infinity ? 'new' : `${up ? '+' : ''}${Math.round(pct)}%`}
+      {pct === Infinity ? 'new' : `${up ? '↑' : '↓'} ${Math.abs(Math.round(pct))}%`}
     </span>
   )
 }
 
+/**
+ * The plan, as one picture.
+ *
+ * The chart is the page and the list beneath it is the chart's legend — the
+ * same colours, in the same order, so there is nothing to cross-reference.
+ */
 export function YearlyView({ doc }: { doc: BudgetDoc }) {
   const palette = useResolvedPalette()
   const summary = useMemo(() => yearlySummary(doc), [doc])
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
-  const [focus, setFocus] = useState<string | null>(null)
+  const [open, setOpen] = useState<Record<string, boolean>>({})
 
-  const labels = summary.years.map((year) => {
-    const months = monthsCovered(doc, year)
-    return months === 12 ? String(year) : `${year}*`
-  })
+  const labels = summary.years.map((year) =>
+    monthsCovered(doc, year) === 12 ? String(year) : `${year}*`,
+  )
 
-  /**
-   * Comparing the last two years says nothing when a plan ends on a plateau,
-   * and a part-covered first year exaggerates everything. The honest span is
-   * first full year to last full year.
-   */
   const fullYears = summary.years
     .map((year, index) => ({ year, index }))
     .filter(({ year }) => monthsCovered(doc, year) === 12)
   const fromIndex = fullYears[0]?.index ?? 0
   const toIndex = fullYears[fullYears.length - 1]?.index ?? summary.years.length - 1
-  const spanLabel =
-    fullYears.length > 1 ? `${summary.years[fromIndex]} → ${summary.years[toIndex]}` : 'over the plan'
 
-  /**
-   * A group takes the colour of whatever it spends most on, so the chart reads
-   * like the list beneath it — but two groups must never share a colour, or the
-   * stack becomes unreadable. Where the first choice is taken, the next
-   * distinct colour inside the group wins, then anything still unused.
-   */
+  /** Two groups must never share a colour, or the stack stops being readable. */
   const groupColour = useMemo(() => {
     const map = new Map<string, string>()
     const taken = new Set<string>()
-
     for (const group of summary.groups) {
       const members = summary.rows
         .filter((r) => r.groupId === group.id)
         .sort((a, b) => b.total - a.total)
-
-      const candidates = [
-        ...members.map((m) => m.color),
-        ...CATEGORY_COLORS,
-      ].filter((c): c is string => Boolean(c))
-
+      const candidates = [...members.map((m) => m.color), ...CATEGORY_COLORS].filter(
+        (c): c is string => Boolean(c),
+      )
       const pick = candidates.find((c) => !taken.has(c)) ?? candidates[0] ?? 'slate'
       taken.add(pick)
       map.set(group.id, colourOf(palette, pick))
@@ -86,28 +73,31 @@ export function YearlyView({ doc }: { doc: BudgetDoc }) {
     return map
   }, [summary, palette])
 
-  const stacked: EChartsOption = useMemo(
+  const option: EChartsOption = useMemo(
     () => ({
-      animationDuration: 500,
-      grid: { left: 8, right: 8, top: 12, bottom: 24, containLabel: true },
+      animationDuration: 600,
+      grid: { left: 2, right: 2, top: 10, bottom: 22, containLabel: true },
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'line', lineStyle: { color: palette.muted, opacity: 0.4 } },
-        backgroundColor: 'rgba(20,20,20,0.95)',
-        borderWidth: 0,
+        axisPointer: { type: 'line', lineStyle: { color: palette.muted, opacity: 0.35 } },
+        backgroundColor: '#ffffff',
+        borderColor: 'rgba(0,0,0,0.08)',
+        borderWidth: 1,
+        padding: [8, 10],
         textStyle: { color: palette.text, fontSize: 12 },
         valueFormatter: (value) => formatCompactINR(Number(value)),
       },
       xAxis: {
         type: 'category',
         data: labels,
-        axisLine: { lineStyle: { color: palette.muted, opacity: 0.25 } },
+        boundaryGap: false,
+        axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: palette.muted, fontSize: 11 },
+        axisLabel: { color: palette.muted, fontSize: 11, interval: 1 },
       },
       yAxis: {
         type: 'value',
-        splitLine: { lineStyle: { color: palette.muted, opacity: 0.12 } },
+        splitLine: { lineStyle: { color: palette.muted, opacity: 0.14 } },
         axisLabel: {
           color: palette.muted,
           fontSize: 11,
@@ -117,86 +107,69 @@ export function YearlyView({ doc }: { doc: BudgetDoc }) {
       series: summary.groups.map((group) => ({
         name: group.name,
         type: 'line' as const,
-        stack: 'total',
-        smooth: 0.35,
+        stack: 'plan',
+        smooth: 0.3,
         showSymbol: false,
         lineStyle: { width: 0 },
         emphasis: { focus: 'series' as const },
-        areaStyle: {
-          color: groupColour.get(group.id),
-          opacity: focus && focus !== group.id ? 0.18 : 0.85,
-        },
+        areaStyle: { color: groupColour.get(group.id), opacity: 0.88 },
         data: group.byYear,
       })),
     }),
-    [summary, labels, palette, groupColour, focus],
+    [summary, labels, palette, groupColour],
   )
 
   const planTotal = summary.totals.reduce((a, b) => a + b, 0)
 
   return (
-    <section className="mt-3 rounded-3xl border bg-card p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold tracking-tight">Year by year</h2>
-        <span className="text-xs text-muted-foreground">
-          {formatCompactINR(planTotal)} over {summary.years.length} years
-        </span>
-      </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        Change shown is {spanLabel}. Open a group for its lines, and a line for every year.
+    <section>
+      <EditableHeading
+        as="h1"
+        labelKey="analytics.title"
+        className="title-serif text-[2rem] leading-tight"
+      />
+      <p className="num-hero mt-2">{formatCompactINR(planTotal)}</p>
+      <p className="mt-1 text-[0.9375rem] text-muted-foreground">
+        planned across {summary.years.length} years, {summary.years[0]} to{' '}
+        {summary.years[summary.years.length - 1]}
       </p>
 
-      <div className="-mx-1 mt-3">
-        <EChart option={stacked} height={230} />
+      {/* Full bleed. The chart is the page, not an illustration inside a card. */}
+      <div className="-mx-4 mt-5">
+        <EChart option={option} height={280} />
       </div>
 
-      {/* The change from one year to the next, which is the thing worth seeing. */}
-      <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {summary.years.map((year, index) => (
-          <div key={year} className="shrink-0 rounded-xl bg-muted/50 px-3 py-2">
-            <p className="text-[0.6875rem] font-medium text-muted-foreground">{labels[index]}</p>
-            <p className="num-md mt-0.5 text-sm">{formatCompactINR(summary.totals[index])}</p>
-            {index > 0 && (
-              <Change previous={summary.totals[index - 1]} next={summary.totals[index]} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      <p className="mt-2 text-xs text-muted-foreground">
-        A year marked * is only partly covered by the plan.
-      </p>
-
-      {/* Groups summarised, expanding to the lines inside them. */}
-      <ul className="mt-4 space-y-1">
+      <ul className="mt-5">
         {summary.groups.map((group) => {
-          const open = openGroups[group.id]
+          const expanded = open[group.id]
           const rows = summary.rows.filter((r) => r.groupId === group.id)
+
           return (
-            <li key={group.id}>
+            <li key={group.id} className="border-b border-border/70 last:border-0">
               <button
-                onClick={() => setOpenGroups((g) => ({ ...g, [group.id]: !g[group.id] }))}
-                onPointerEnter={() => setFocus(group.id)}
-                onPointerLeave={() => setFocus(null)}
-                className="flex w-full items-center gap-2.5 rounded-xl px-1 py-2.5 text-left transition-colors hover:bg-accent/60"
+                onClick={() => setOpen((o) => ({ ...o, [group.id]: !o[group.id] }))}
+                className="flex w-full items-center gap-3 py-3.5 text-left"
               >
-                <IconChevronRight
-                  size={14}
-                  className={cn('shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
-                />
                 <span
-                  className="size-2.5 shrink-0 rounded-full"
+                  className="size-3 shrink-0 rounded-[3px]"
                   style={{ backgroundColor: groupColour.get(group.id) }}
                 />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{group.name}</span>
-                <span className="num-md shrink-0 text-sm">{formatCompactINR(group.total)}</span>
-                <span className="w-14 shrink-0 text-right">
+                <span className="min-w-0 flex-1 truncate text-[0.9375rem]">{group.name}</span>
+                <span className="num-md shrink-0">{formatCompactINR(group.total)}</span>
+                <span className="w-16 shrink-0 text-right">
                   <Change previous={group.byYear[fromIndex]} next={group.byYear[toIndex]} />
                 </span>
+                <IconChevronRight
+                  size={15}
+                  className={cn(
+                    'shrink-0 text-muted-foreground/60 transition-transform',
+                    expanded && 'rotate-90',
+                  )}
+                />
               </button>
 
-              {open && (
-                <ul className="mb-2 ml-6 space-y-0.5 border-l pl-3">
+              {expanded && (
+                <ul className="mb-3 space-y-0.5 pl-6">
                   {rows.map((row) => (
                     <LineYears
                       key={row.categoryId}
@@ -212,6 +185,11 @@ export function YearlyView({ doc }: { doc: BudgetDoc }) {
           )
         })}
       </ul>
+
+      <p className="mt-4 text-sm text-muted-foreground">
+        Change compares {summary.years[fromIndex]} with {summary.years[toIndex]}. A year marked
+        with a star is only partly covered by the plan.
+      </p>
     </section>
   )
 }
@@ -234,33 +212,30 @@ function LineYears({
     <li>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 rounded-lg px-1 py-2 text-left transition-colors hover:bg-accent/60"
+        className="flex w-full items-center gap-2.5 py-2 text-left"
       >
         <CategoryIcon name={row.name} icon={row.icon} color={row.color} size="sm" />
         <span className="min-w-0 flex-1 truncate text-sm">{row.name}</span>
         <span className="num-md shrink-0 text-sm">{formatCompactINR(row.total)}</span>
-        <span className="w-14 shrink-0 text-right">
+        <span className="w-16 shrink-0 text-right">
           <Change previous={row.byYear[fromIndex]} next={row.byYear[toIndex]} />
         </span>
       </button>
 
       {open && (
-        <div className="-mx-1 mb-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {row.byYear.map((amount, index) => (
             <div
               key={index}
               className={cn(
-                'shrink-0 rounded-lg px-2 py-1.5 text-center',
-                amount === 0 ? 'bg-muted/30' : 'bg-muted/70',
+                'shrink-0 rounded-lg px-2.5 py-2 text-center',
+                amount === 0 ? 'bg-elevated/60' : 'bg-elevated',
               )}
             >
-              <p className="text-[0.625rem] text-muted-foreground">{labels[index]}</p>
-              <p className={cn('text-xs tnum', amount === 0 && 'text-muted-foreground/50')}>
+              <p className="text-xs text-muted-foreground">{labels[index]}</p>
+              <p className={cn('mt-0.5 text-sm tnum', amount === 0 && 'text-muted-foreground/50')}>
                 {amount === 0 ? '—' : formatINR(amount)}
               </p>
-              {index > 0 && (
-                <Change previous={row.byYear[index - 1]} next={amount} />
-              )}
             </div>
           ))}
         </div>

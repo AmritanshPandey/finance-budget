@@ -17,8 +17,8 @@ export function SetupScreen() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 pb-28 pt-safe">
       <header className="pb-1 pt-4">
-        <EditableHeading as="h1" labelKey="setup.title" className="text-lg font-semibold tracking-tight" />
-        <p className="text-xs text-muted-foreground">
+        <EditableHeading as="h1" labelKey="setup.title" className="title-serif text-[2rem] leading-tight" />
+        <p className="mt-1 text-[0.9375rem] text-muted-foreground">
           The shape of your plan, and the few numbers behind it.
         </p>
       </header>

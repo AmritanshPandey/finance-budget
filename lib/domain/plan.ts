@@ -75,31 +75,20 @@ export function planFromVersions(versions: TemplateLineVersion[]): LinePlan {
   }
 }
 
-/** Short enough for a chip, specific enough to be worth reading. */
+/**
+ * One clause, not a list. The chip has to sit on a single line next to an
+ * amount; the panel behind it carries the full detail.
+ */
 export function describePlan(plan: LinePlan): string {
   const steps = sortSteps(plan.steps)
-  const parts: string[] = []
 
-  if (steps.length > 2) {
-    parts.push(`${steps.length - 1} changes ahead`)
-  } else if (steps.length === 2) {
-    parts.push(
-      `${formatCompactINR(steps[1].amount)} from ${formatMonthLabel(steps[1].from)}`,
-    )
-  } else if (plan.growthRatePct !== 0) {
-    parts.push(`Climbs ${plan.growthRatePct}% a year`)
-  } else if (!plan.endsAfter) {
-    parts.push('Same every month')
+  if (steps.length > 2) return `${steps.length - 1} changes ahead`
+  if (steps.length === 2) {
+    return `${formatCompactINR(steps[1].amount)} from ${formatMonthLabel(steps[1].from)}`
   }
-
-  if (steps.length > 1 && plan.growthRatePct !== 0) {
-    parts.push(`then climbs ${plan.growthRatePct}%`)
-  }
-  if (plan.endsAfter) {
-    parts.push(`stops after ${formatMonthLabel(plan.endsAfter)}`)
-  }
-
-  return parts.join(' · ')
+  if (plan.endsAfter) return `Stops after ${formatMonthLabel(plan.endsAfter)}`
+  if (plan.growthRatePct !== 0) return `Climbs ${plan.growthRatePct}% a year`
+  return 'Same every month'
 }
 
 /** Whether anything at all is scheduled to move. */

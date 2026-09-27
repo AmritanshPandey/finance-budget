@@ -55,7 +55,7 @@ export function WhatsComing({ doc }: { doc: BudgetDoc }) {
   return (
     <section className="rounded-3xl border bg-card p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <EditableHeading labelKey="budget.coming" className="text-sm font-semibold tracking-tight" />
+        <EditableHeading labelKey="budget.coming" className="title-serif text-[1.25rem]" />
         <span className="text-xs text-muted-foreground">
           {changes.length === 0 ? 'nothing yet' : `${changes.length} scheduled`}
         </span>

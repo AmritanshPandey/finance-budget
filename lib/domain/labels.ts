@@ -13,7 +13,7 @@ export const DEFAULT_LABELS: Record<string, string> = {
   'overview.recent': 'Recent spending',
   'budget.title': 'Budget',
   'budget.coming': 'What’s coming',
-  'analytics.title': 'Trends',
+  'analytics.title': 'Where it goes',
   'analytics.spending': 'Overall spending',
   'analytics.allocation': 'Where it goes',
   'analytics.investments': 'Investments',

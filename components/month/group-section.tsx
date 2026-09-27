@@ -53,7 +53,7 @@ export function GroupSection({
         ) : (
           <span
             className={cn(
-              'flex-1 py-3 text-sm font-semibold tracking-tight',
+              'flex-1 py-3 text-[0.9375rem] font-medium',
               muted && 'text-muted-foreground',
             )}
           >
@@ -120,7 +120,7 @@ function GroupName({
         }
       }}
       className={cn(
-        'min-w-0 flex-1 rounded-md bg-transparent py-3 text-sm font-semibold tracking-tight',
+        'min-w-0 flex-1 rounded-md bg-transparent py-3 text-[0.9375rem] font-medium',
         'outline-none transition-colors focus:bg-accent/70 focus:ring-2 focus:ring-ring/40',
         muted && 'text-muted-foreground',
       )}

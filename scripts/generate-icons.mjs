@@ -11,9 +11,10 @@
 import { deflateSync } from 'node:zlib'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
-// Resolved from the --primary / --primary-foreground tokens in globals.css.
-const LIME = [174, 240, 58]
-const INK = [17, 21, 10]
+// Ink on paper, matching the app. A dark mark reads on any wallpaper, where
+// a near-white one would disappear against a light one.
+const GROUND = [22, 32, 43]
+const INK = [251, 251, 250]
 const SUPERSAMPLE = 3
 
 /** Signed-distance style test for a rounded rectangle. */
@@ -62,7 +63,7 @@ function render(size) {
       const a = hits / (SUPERSAMPLE * SUPERSAMPLE)
       const offset = (py * size + px) * 4
       for (let c = 0; c < 3; c++) {
-        pixels[offset + c] = Math.round(LIME[c] * (1 - a) + INK[c] * a)
+        pixels[offset + c] = Math.round(GROUND[c] * (1 - a) + INK[c] * a)
       }
       pixels[offset + 3] = 255
     }

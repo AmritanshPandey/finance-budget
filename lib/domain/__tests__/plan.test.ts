@@ -138,13 +138,27 @@ describe('describing a plan', () => {
     expect(describePlan(STEPPING_LOAN)).toBe('2 changes ahead')
   })
 
-  it('mentions an ending alongside the steps', () => {
+  it('says when something stops', () => {
     expect(
       describePlan({
         steps: [{ from: '2026-10', amount: toPaise(7_500) }],
         growthRatePct: 0,
         endsAfter: '2027-07',
       }),
-    ).toBe('stops after Jul 2027')
+    ).toBe('Stops after Jul 2027')
+  })
+
+  it('stays to one clause so the chip fits on a line', () => {
+    const busy = describePlan({
+      steps: [
+        { from: '2026-10', amount: toPaise(1) },
+        { from: '2027-10', amount: toPaise(2) },
+        { from: '2028-10', amount: toPaise(3) },
+      ],
+      growthRatePct: 8,
+      endsAfter: '2029-12',
+    })
+    expect(busy).toBe('2 changes ahead')
+    expect(busy).not.toContain('·')
   })
 })

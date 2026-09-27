@@ -41,8 +41,8 @@ export function OverviewScreen() {
     <div className="mx-auto max-w-2xl px-4 pb-28 pt-safe">
       <header className="flex items-center justify-between gap-3 pb-4 pt-5">
         <div>
-          <EditableHeading as="h1" labelKey="overview.title" className="text-xl font-semibold tracking-tight" />
-          <p className="text-xs text-muted-foreground">{formatMonthLabel(month)}</p>
+          <EditableHeading as="h1" labelKey="overview.title" className="title-serif text-[1.875rem] leading-tight" />
+          <p className="mt-0.5 text-sm text-muted-foreground">{formatMonthLabel(month)}</p>
         </div>
         <button
           onClick={() => setAdding(true)}
@@ -55,10 +55,10 @@ export function OverviewScreen() {
 
       {/* The hero. One loud card, everything else recedes. */}
       <section className="rounded-3xl bg-primary p-5 text-primary-foreground">
-        <span className="inline-flex rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-semibold">
+        <span className="inline-flex rounded-full bg-primary-foreground/15 px-3 py-1 text-[0.8125rem]">
           Active budget plan
         </span>
-        <p className="mt-4 text-sm font-medium opacity-80">Total available</p>
+        <p className="mt-5 text-[0.9375rem] opacity-70">Total available</p>
         <p className="num-hero mt-1">{formatINR(available)}</p>
 
         <p className="mt-4 text-sm font-medium opacity-90">
@@ -80,7 +80,7 @@ export function OverviewScreen() {
 
       <section className="mt-3 rounded-3xl border bg-card p-4">
         <div className="flex items-center justify-between gap-3">
-          <EditableHeading labelKey="overview.recent" className="text-sm font-semibold tracking-tight" />
+          <EditableHeading labelKey="overview.recent" className="title-serif text-[1.25rem]" />
           <Link
             href="/analytics"
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -156,8 +156,8 @@ function BillsDueCard({ doc }: { doc: BudgetDoc }) {
   const emiTotal = doc.loans.reduce((a, l) => a + loanEMI(l), 0)
 
   return (
-    <section className="rounded-3xl border bg-card p-4">
-      <EditableHeading labelKey="overview.bills" className="text-sm font-semibold tracking-tight" />
+    <section className="rounded-2xl bg-elevated p-4">
+      <EditableHeading labelKey="overview.bills" className="title-serif text-[1.25rem]" />
       {next ? (
         <>
           <p className="mt-3 text-sm text-muted-foreground">{next.name}</p>
@@ -192,7 +192,7 @@ function TopGoalCard({ available }: { available: Paise }) {
   if (!goal) {
     return (
       <section className="rounded-3xl border bg-card p-4">
-        <EditableHeading labelKey="overview.goal" className="text-sm font-semibold tracking-tight" />
+        <EditableHeading labelKey="overview.goal" className="title-serif text-[1.25rem]" />
         <Link href="/goals" className="mt-3 block text-xs text-muted-foreground hover:text-foreground">
           Nothing set yet. Pick something to save towards.
         </Link>
@@ -205,8 +205,8 @@ function TopGoalCard({ available }: { available: Paise }) {
   const pct = goal.targetAmount > 0 ? saved / goal.targetAmount : 0
 
   return (
-    <Link href="/goals" className="block rounded-3xl border bg-card p-4">
-      <EditableHeading labelKey="overview.goal" className="text-sm font-semibold tracking-tight" />
+    <Link href="/goals" className="block rounded-2xl bg-elevated p-4">
+      <EditableHeading labelKey="overview.goal" className="title-serif text-[1.25rem]" />
       <p className="mt-3 truncate text-sm text-muted-foreground">
         {goal.emoji} {goal.name}
       </p>
